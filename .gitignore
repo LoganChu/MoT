@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+runs_logs/
+runs_pilot/
+viz/mot_dynamics.html

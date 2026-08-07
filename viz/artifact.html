@@ -1,0 +1,1460 @@
+<title>What actually trains in a Mixture-of-Transformers</title>
+<style>
+:root {
+  color-scheme: light;
+  --paper:  #f5f6f8;
+  --panel:  #fdfdfe;
+  --well:   #eceff4;
+  --ink:    #0f1319;
+  --ink-2:  #4a5462;
+  --ink-3:  #7d8797;
+  --rule:   #dde2e9;
+  --ch-text:  #2a78d6;
+  --ch-image: #eb6834;
+  --ch-text-soft:  rgba(42,120,214,.14);
+  --ch-image-soft: rgba(235,104,52,.14);
+  --shadow: 0 1px 2px rgba(15,19,25,.05);
+  --mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --paper:  #101318;
+    --panel:  #171a21;
+    --well:   #1c2028;
+    --ink:    #eef1f6;
+    --ink-2:  #a8b2c0;
+    --ink-3:  #79828f;
+    --rule:   #272c35;
+    --ch-text:  #3987e5;
+    --ch-image: #d95926;
+    --ch-text-soft:  rgba(57,135,229,.18);
+    --ch-image-soft: rgba(217,89,38,.18);
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper:  #101318;
+  --panel:  #171a21;
+  --well:   #1c2028;
+  --ink:    #eef1f6;
+  --ink-2:  #a8b2c0;
+  --ink-3:  #79828f;
+  --rule:   #272c35;
+  --ch-text:  #3987e5;
+  --ch-image: #d95926;
+  --ch-text-soft:  rgba(57,135,229,.18);
+  --ch-image-soft: rgba(217,89,38,.18);
+  --shadow: none;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px 96px; }
+.prose { max-width: 68ch; }
+
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 4.4vw, 3.1rem); font-weight: 700; letter-spacing: -.028em; line-height: 1.08; }
+h2 { font-size: clamp(1.3rem, 2.2vw, 1.65rem); font-weight: 650; letter-spacing: -.017em; }
+h3 { font-size: 1rem; font-weight: 650; letter-spacing: -.008em; }
+p  { margin: 0 0 1em; color: var(--ink-2); }
+strong { color: var(--ink); font-weight: 620; }
+a { color: var(--ch-text); }
+
+.eyebrow {
+  font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3);
+}
+
+/* ---------- masthead ---------- */
+.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--rule); }
+.masthead .lede {
+  font-size: 1.18rem; line-height: 1.55; color: var(--ink-2);
+  max-width: 60ch; margin-top: 20px;
+}
+.facts { display: flex; flex-wrap: wrap; gap: 0 40px; margin: 32px 0 0; padding: 0; }
+.facts div { padding: 0; }
+.facts dt { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; }
+.facts dd { margin: 0; font-family: var(--mono); font-size: 1.05rem; color: var(--ink);
+  font-variant-numeric: tabular-nums; }
+
+section { padding: 56px 0 0; }
+.section-head { margin-bottom: 24px; }
+.section-head .eyebrow { display: block; margin-bottom: 8px; }
+.section-head h2 + p { margin-top: 12px; }
+
+/* ---------- controls ---------- */
+.controls {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px;
+  padding: 12px 16px; margin: 48px 0 0;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow);
+}
+.controls .field { display: flex; align-items: center; gap: 9px; }
+.controls label {
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3); white-space: nowrap;
+}
+select, button {
+  font-family: var(--mono); font-size: .8rem; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--rule);
+  border-radius: 7px; padding: 6px 10px; cursor: pointer;
+}
+button:hover, select:hover { border-color: var(--ink-3); }
+:focus-visible { outline: 2px solid var(--ch-text); outline-offset: 2px; }
+.scrub { flex: 1 1 260px; display: flex; align-items: center; gap: 12px; min-width: 220px; }
+input[type=range] { flex: 1; accent-color: var(--ch-text); min-width: 120px; }
+.readout {
+  font-family: var(--mono); font-size: .82rem; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.run-note { font-size: .82rem; color: var(--ink-3); flex-basis: 100%; margin: 0; }
+
+/* ---------- panels ---------- */
+.panel {
+  background: var(--panel); border: 1px solid var(--rule);
+  border-radius: 12px; padding: 20px; box-shadow: var(--shadow);
+}
+.panel h3 { margin-bottom: 3px; }
+.panel .sub { font-size: .83rem; color: var(--ink-3); margin: 0 0 14px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
+.chart { width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* ---------- legend ---------- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: .72rem; color: var(--ink-2); }
+.swatch { width: 11px; height: 3px; border-radius: 2px; flex: none; }
+.swatch.dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ---------- takeaway ---------- */
+.takeaway {
+  border-left: 2px solid var(--ch-text); padding: 2px 0 2px 16px;
+  margin: 20px 0 0; font-size: .95rem; color: var(--ink-2);
+}
+.takeaway strong { color: var(--ink); }
+
+.panel.wrong { border-left: 2px solid var(--ch-image); }
+.wrong-item { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.wrong-item:last-child { border-bottom: 0; padding-bottom: 0; }
+.wrong-item .claim { color: var(--ink); font-weight: 600; font-size: .95rem; }
+.wrong-item .measured { font-family: var(--mono); font-size: .78rem;
+  color: var(--ch-image); margin: 5px 0; font-variant-numeric: tabular-nums; }
+.wrong-item .why { font-size: .88rem; color: var(--ink-2); margin: 0; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; margin-top: 14px; }
+table { border-collapse: collapse; width: 100%; font-size: .8rem;
+  font-family: var(--mono); font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 7px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { color: var(--ink-3); font-weight: 600; font-size: .68rem;
+  letter-spacing: .08em; text-transform: uppercase; }
+tbody tr:hover { background: var(--well); }
+td.pos { color: var(--ch-text); } td.neg { color: var(--ch-image); }
+
+details { margin-top: 14px; }
+summary { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-3); cursor: pointer; }
+summary:hover { color: var(--ink-2); }
+
+/* ---------- example card ---------- */
+.example { display: flex; flex-wrap: wrap; gap: 26px; align-items: center; }
+.pixgrid { display: grid; grid-template-columns: repeat(9, 15px); gap: 1px; flex: none; }
+.pixgrid i { width: 15px; height: 15px; border-radius: 2px; background: var(--well); }
+.tokens { display: flex; flex-wrap: wrap; gap: 4px; font-family: var(--mono); font-size: .72rem; }
+.tok { padding: 2px 7px; border-radius: 5px; white-space: nowrap; }
+.tok.t { background: var(--ch-text-soft); color: var(--ch-text); }
+.tok.i { background: var(--ch-image-soft); color: var(--ch-image); }
+.tok.s { background: var(--well); color: var(--ink-3); }
+
+/* ---------- stack diagram ---------- */
+.stack-wrap { display: grid; grid-template-columns: 1fr; gap: 18px; }
+.stack-legend { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; }
+
+/* ---------- tooltip ---------- */
+.tip {
+  position: fixed; pointer-events: none; z-index: 60; opacity: 0;
+  transition: opacity .1s; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 8px 11px;
+  font-family: var(--mono); font-size: .72rem; line-height: 1.5;
+  box-shadow: 0 4px 14px rgba(15,19,25,.13); max-width: 260px;
+}
+.tip b { color: var(--ink); font-weight: 620; }
+.tip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .row span:last-child { font-variant-numeric: tabular-nums; }
+
+footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--rule);
+  font-size: .84rem; color: var(--ink-3); }
+footer code { font-family: var(--mono); font-size: .95em; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+@media (max-width: 640px) {
+  .masthead { padding-top: 44px; }
+  .facts { gap: 0 26px; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <span class="eyebrow" id="mast-eyebrow">Measured, not simulated</span>
+  <h1>What actually trains in a Mixture&#8209;of&#8209;Transformers</h1>
+  <p class="lede">
+    MoT gives every modality its own transformer weights but lets one attention
+    operation see the whole sequence. That raises an obvious worry: if each expert
+    only ever touches its own tokens, what stops the modality with more data from
+    running away with the training? This page answers that by instrumenting a small
+    MoT and watching &mdash; per layer, per expert, per step.
+  </p>
+  <dl class="facts" id="facts"></dl>
+</header>
+
+<section id="setup">
+  <div class="section-head prose">
+    <span class="eyebrow">The setup</span>
+    <h2>A task that cannot be solved one modality at a time</h2>
+    <p>
+      Each scene is a 3&times;3 board holding one to three coloured shapes, written
+      two ways: a <strong>caption</strong> and a <strong>row of patch codes</strong>
+      (a stand&#8209;in for the VQ tokens a real image tokenizer emits). The two views are
+      in bijection, so in a <em>caption&nbsp;&rarr;&nbsp;image</em> document the image
+      tokens are predictable <em>only</em> by attending back to the caption, and vice
+      versa. That is what makes cross&#8209;modal attention something we can measure
+      rather than assume: switch it off, and the loss on exactly those tokens has to
+      get worse.
+    </p>
+  </div>
+  <div class="panel">
+    <h3>One document, both views</h3>
+    <p class="sub">A real sample from the generator</p>
+    <div class="example" id="example"></div>
+  </div>
+
+  <div class="grid-2" style="margin-top:18px">
+    <div class="panel prose">
+      <h3>What is split, what is shared</h3>
+      <p class="sub">Following Liang et&nbsp;al., arXiv:2411.04996</p>
+      <p style="font-size:.92rem">
+        <strong>Per modality:</strong> the feed&#8209;forward network, the Q/K/V/O
+        projections, the QK&#8209;norms and every layer norm. <strong>Shared:</strong>
+        the embedding, the output head, and &mdash; the whole point &mdash; a single
+        causal attention over the full interleaved stream. Routing is deterministic
+        from the token's modality; there is no learned router.
+      </p>
+    </div>
+    <div class="panel prose">
+      <h3>Why both experts start identical</h3>
+      <p class="sub">A measurement choice, not standard practice</p>
+      <p style="font-size:.92rem">
+        Both experts are initialised to <em>exactly</em> the same weights. Divergence
+        between them is therefore pinned to zero at step&nbsp;0, so anything we see
+        later is caused by training rather than by initialisation noise. In ordinary
+        practice you would initialise them independently.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="controls" id="controls">
+  <div class="field">
+    <label for="run-select">Run</label>
+    <select id="run-select"></select>
+  </div>
+  <div class="scrub">
+    <label for="step-range">Step</label>
+    <input type="range" id="step-range" min="0" max="100" value="100" step="1">
+    <span class="readout" id="step-readout">&mdash;</span>
+  </div>
+  <button id="play" aria-label="Play training">&#9654;&nbsp;Play</button>
+  <p class="run-note" id="run-note"></p>
+</div>
+
+<section id="stack">
+  <div class="section-head prose">
+    <span class="eyebrow">Question 1 &mdash; how trained is each transformer?</span>
+    <h2>The stack, heating up</h2>
+    <p>
+      Each block is shaded by how far its weights have travelled from where they
+      started, <span style="white-space:nowrap">&#8214;&theta;<sub>t</sub>&minus;&theta;<sub>0</sub>&#8214;&nbsp;/&nbsp;&#8214;&theta;<sub>0</sub>&#8214;</span>.
+      The ribbons between the columns are measured attention mass &mdash; how much of
+      each modality's attention is spent reading the other one, at that layer, at that
+      step. Drag the scrubber.
+    </p>
+  </div>
+  <div class="panel">
+    <div class="stack-wrap">
+      <div class="chart" id="stack-chart"></div>
+      <div class="stack-legend" id="stack-legend"></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:18px">
+    <div class="panel">
+      <h3>Weight movement from initialisation</h3>
+      <p class="sub">Averaged over the six layers</p>
+      <div class="chart" id="disp-chart"></div>
+    </div>
+    <div class="panel">
+      <h3>Balance ratio</h3>
+      <p class="sub">Image expert movement &divide; text expert movement</p>
+      <div class="chart" id="ratio-chart"></div>
+    </div>
+  </div>
+  <p class="takeaway" id="takeaway-1"></p>
+</section>
+
+<section id="attribution">
+  <div class="section-head prose">
+    <span class="eyebrow">Question 2 &mdash; who trains whom?</span>
+    <h2>The experts are not actually isolated</h2>
+    <p>
+      Because attention is global, an image token's keys and values feed a text
+      token's output. So the text loss has a gradient path into the <em>image</em>
+      expert's weights. Each cell below is the share of an expert's gradient arriving
+      from each modality's loss &mdash; measured by backpropagating each modality's
+      loss separately on a fixed held&#8209;out batch.
+    </p>
+  </div>
+  <div class="grid-3" id="attr-matrices"></div>
+  <div class="grid-2" style="margin-top:18px">
+    <div class="panel">
+      <h3>The image expert's cross&#8209;modal subsidy</h3>
+      <p class="sub">Share of its gradient arriving from the text loss</p>
+      <div class="chart" id="cross-chart"></div>
+    </div>
+    <div class="panel">
+      <h3>The control that makes this trustworthy</h3>
+      <p class="sub">Blocking cross&#8209;modal attention</p>
+      <p style="font-size:.92rem;color:var(--ink-2)">
+        If the off&#8209;diagonal were an artefact of the measurement, it would survive
+        when cross&#8209;modal attention is masked out. It does not: in the
+        <code style="font-family:var(--mono);font-size:.85em">blocked_attention</code>
+        run it is <em>identically</em> zero, to the last bit, at every layer and every
+        step &mdash; and the diagonal stays healthy. This is asserted in the test suite,
+        not just observed.
+      </p>
+      <div class="table-wrap"><table id="control-table"></table></div>
+    </div>
+  </div>
+  <p class="takeaway" id="takeaway-2"></p>
+</section>
+
+<section id="fusion">
+  <div class="section-head prose">
+    <span class="eyebrow">Question 3 &mdash; where does it synthesise?</span>
+    <h2>Where the two streams actually meet</h2>
+    <p>
+      Attention rows sum to one, so the off&#8209;diagonal mass is literally the
+      fraction of a modality's attention spent reading the other. Plotted per layer,
+      it shows <em>where in the stack</em> fusion happens rather than merely that it
+      does.
+    </p>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Cross&#8209;modal attention by depth</h3>
+      <p class="sub">At the scrubbed step</p>
+      <div class="chart" id="fusion-chart"></div>
+    </div>
+    <div class="panel">
+      <h3>Over training</h3>
+      <p class="sub">Averaged over layers</p>
+      <div class="chart" id="fusion-time-chart"></div>
+    </div>
+    <div class="panel">
+      <h3>Representational alignment</h3>
+      <p class="sub">Linear CKA between each document's pooled text and image states</p>
+      <div class="chart" id="cka-chart"></div>
+      <p style="font-size:.85rem;color:var(--ink-3);margin:10px 0 0" id="cka-note"></p>
+    </div>
+  </div>
+  <p class="takeaway" id="takeaway-3"></p>
+</section>
+
+<section id="special">
+  <div class="section-head prose">
+    <span class="eyebrow">Specialisation</span>
+    <h2>Two transformers pulling apart from a shared start</h2>
+    <p>
+      Both experts began as the same weights. The distance between them is
+      specialisation, and nothing else. One caveat on reading the aggregate: layer-norm
+      weights start at 1.0 and so carry a large share of the parameter norm while barely
+      moving, which drags the &ldquo;overall&rdquo; number below what the projection
+      matrices actually did. The per&#8209;component panel is the honest view.
+    </p>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Divergence over training</h3>
+      <p class="sub">Relative L2 distance between the experts, per layer</p>
+      <div class="chart" id="div-chart"></div>
+    </div>
+    <div class="panel">
+      <h3>Which components specialise</h3>
+      <p class="sub">At the scrubbed step, averaged over layers</p>
+      <div class="chart" id="div-parts-chart"></div>
+    </div>
+  </div>
+  <p class="takeaway" id="takeaway-4"></p>
+</section>
+
+<section id="balance">
+  <div class="section-head prose">
+    <span class="eyebrow">The mechanism &mdash; cross&#8209;run comparison</span>
+    <h2>Adam hides the imbalance; SGD shows it</h2>
+    <p>
+      A starved expert accumulates gradient from fewer tokens, and the first panel
+      shows exactly that &mdash; the image expert's gradient norm sits well below the
+      text expert's all through training. But Adam divides by a running second moment,
+      so the <em>size</em> of the step it actually takes barely changes. Under plain
+      SGD the same imbalance lands straight in the step size. Both panels are the
+      same 85/15 token mixture; only the optimiser differs.
+    </p>
+  </div>
+  <div class="grid-3">
+    <div class="panel">
+      <h3>Gradient norm ratio</h3>
+      <p class="sub">Image expert &divide; text expert</p>
+      <div class="chart" id="bal-grad"></div>
+    </div>
+    <div class="panel">
+      <h3>Update norm ratio</h3>
+      <p class="sub">The step actually taken</p>
+      <div class="chart" id="bal-update"></div>
+    </div>
+    <div class="panel">
+      <h3>Gradient SNR ratio</h3>
+      <p class="sub">Signal&#8209;to&#8209;noise, image &divide; text</p>
+      <div class="chart" id="bal-snr"></div>
+    </div>
+  </div>
+  <p class="takeaway" id="takeaway-5"></p>
+
+  <div class="panel wrong" style="margin-top:22px">
+    <span class="eyebrow" style="color:var(--ch-image)">Predicted before the runs &mdash; not confirmed</span>
+    <h3 style="margin-top:8px">Two things I expected that the measurements refused</h3>
+    <div id="not-confirmed"></div>
+    <p style="font-size:.85rem;color:var(--ink-3);margin:14px 0 0">
+      Both are reported by <code>scripts/report.py</code> as NOT CONFIRMED rather than
+      quietly reworded to match the result. A prediction the data rejects is a finding.
+    </p>
+  </div>
+</section>
+
+<section id="outcomes">
+  <div class="section-head prose">
+    <span class="eyebrow">What it costs</span>
+    <h2>Held&#8209;out loss across every run</h2>
+  </div>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Image loss</h3>
+      <p class="sub">Held&#8209;out, all runs</p>
+      <div class="chart" id="loss-image"></div>
+    </div>
+    <div class="panel">
+      <h3>Text loss</h3>
+      <p class="sub">Held&#8209;out, all runs</p>
+      <div class="chart" id="loss-text"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:18px">
+    <h3>Every run at the end of training</h3>
+    <p class="sub">The table view &mdash; every number the charts above encode</p>
+    <div class="table-wrap"><table id="summary-table"></table></div>
+  </div>
+</section>
+
+<section id="caveats">
+  <div class="section-head prose">
+    <span class="eyebrow">Reading this honestly</span>
+    <h2>What transfers and what does not</h2>
+  </div>
+  <div class="prose">
+    <p id="caveat-scale"></p>
+    <p>
+      <strong>Magnitudes do not transfer.</strong> This is a small model on synthetic
+      data with a nine&#8209;token image. Do not carry a specific percentage here to a
+      7B run.
+    </p>
+    <p>
+      <strong>The mechanisms are what transfer.</strong> That gradient exposure scales
+      with token count while Adam's step size does not; that global attention creates a
+      gradient path into every expert regardless of its own token share; that
+      specialisation is layer&#8209;dependent. Those follow from the architecture and
+      the optimiser, not from this task.
+    </p>
+    <p>
+      <strong>Identical initialisation is not standard.</strong> It is used here so
+      that divergence starts at exactly zero and is attributable to training.
+    </p>
+    <p id="caveat-null"></p>
+    <p>
+      <strong>One task, one seed.</strong> Every run uses seed 0 and the same synthetic
+      corpus, so run-to-run variance is not characterised here. The directional results
+      are large and consistent with the mechanism, but the precise ratios should be read
+      as this run's numbers rather than as estimates with error bars.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <p>
+    Every number on this page was measured by <code>scripts/run_all.py</code> and
+    bundled by <code>viz/build.py</code>; nothing is illustrative. Architecture follows
+    <a href="https://arxiv.org/abs/2411.04996">Mixture&#8209;of&#8209;Transformers</a>
+    (Liang et&nbsp;al., TMLR&nbsp;2025) and its reference implementation.
+  </p>
+</footer>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = __MOT_DATA__;
+const RUNS = DATA.runs;
+const TEXT = 0, IMAGE = 1;
+const NAMES = ["text", "image"];
+
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (v, d = 2) => (v == null || !isFinite(v)) ? "—" : v.toFixed(d);
+const pct = (v, d = 0) => (v == null || !isFinite(v)) ? "—" : (v * 100).toFixed(d) + "%";
+const titleize = s => s.replace(/_/g, " ");
+
+/* Runs with two experts can be scrubbed; the dense baseline has only one, so it
+   appears in the loss comparison and the table but not in the per-expert panels. */
+const SCRUBBABLE = Object.keys(RUNS).filter(k => RUNS[k].nExperts > 1);
+const ORDER = ["balanced", "text_heavy", "text_heavy_normalized", "text_heavy_sgd",
+               "blocked_attention", "dense"].filter(k => RUNS[k]);
+
+const state = { run: RUNS.balanced ? "balanced" : SCRUBBABLE[0], t: 1, playing: false };
+
+/* ------------------------------------------------------------------ tooltip */
+const tipEl = document.getElementById("tip");
+function showTip(evt, html) {
+  tipEl.innerHTML = html;
+  tipEl.style.opacity = "1";
+  const pad = 14, r = tipEl.getBoundingClientRect();
+  let x = evt.clientX + pad, y = evt.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = evt.clientY - r.height - pad;
+  tipEl.style.left = x + "px"; tipEl.style.top = y + "px";
+}
+const hideTip = () => { tipEl.style.opacity = "0"; };
+addEventListener("scroll", hideTip, { passive: true });
+
+/* ------------------------------------------------------------------- svg kit */
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) if (attrs[k] != null) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function smooth(values, window = 11) {
+  const half = window >> 1;
+  return values.map((_, i) => {
+    let sum = 0, n = 0;
+    for (let j = Math.max(0, i - half); j <= Math.min(values.length - 1, i + half); j++) {
+      const v = values[j];
+      if (v != null && isFinite(v)) { sum += v; n++; }
+    }
+    return n ? sum / n : null;
+  });
+}
+function niceTicks(lo, hi, count = 5) {
+  if (!isFinite(lo) || !isFinite(hi)) return [0];
+  if (hi === lo) return [lo];
+  const raw = (hi - lo) / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm >= 7.5 ? 10 : norm >= 3.5 ? 5 : norm >= 1.5 ? 2 : 1) * mag;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) out.push(v);
+  return out;
+}
+
+/* Charts re-render at real pixel size so type is never scaled by the viewBox. */
+const charts = [];
+function register(host, draw) {
+  const entry = { host, draw };
+  charts.push(entry);
+  const ro = new ResizeObserver(() => entry.draw());
+  ro.observe(host);
+  entry.draw();
+}
+const redrawAll = () => charts.forEach(c => c.draw());
+
+/* --------------------------------------------------------------- line chart */
+function lineChart(host, opts) {
+  const draw = () => {
+    const W = Math.max(host.clientWidth || 340, 240);
+    const H = opts.height || 230;
+    const m = { t: 14, r: opts.padRight ?? 16, b: 34, l: opts.padLeft ?? 46 };
+    host.textContent = "";
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H,
+      role: "img", "aria-label": opts.aria || "" });
+
+    /* Per-step ratios bounce hard. Where a series asks for smoothing we draw the
+       raw trace faded behind the rolling mean, so the trend is legible without
+       the variance being hidden. Tooltips report the smoothed value. */
+    const series = opts.series
+      .filter(s => s.values.some(v => v != null && isFinite(v)))
+      .map(s => ({ ...s, plot: s.smooth ? smooth(s.values, s.smooth) : s.values }));
+    if (!series.length) { host.appendChild(svg); return; }
+    const xs = opts.x;
+    let lo = opts.yMin, hi = opts.yMax;
+    if (lo == null || hi == null) {
+      let a = Infinity, b = -Infinity;
+      series.forEach(s => s.plot.forEach(v => {
+        if (v != null && isFinite(v)) { a = Math.min(a, v); b = Math.max(b, v); }
+      }));
+      if (opts.baseline != null) { a = Math.min(a, opts.baseline); b = Math.max(b, opts.baseline); }
+      const pad = (b - a) * 0.12 || Math.abs(b) * 0.12 || 1;
+      lo = lo ?? (opts.zeroBase ? Math.min(0, a) : a - pad);
+      hi = hi ?? b + pad;
+    }
+    const xLo = xs[0], xHi = xs[xs.length - 1];
+    const X = v => m.l + (xHi === xLo ? 0 : (v - xLo) / (xHi - xLo)) * (W - m.l - m.r);
+    const Y = v => H - m.b - (hi === lo ? 0 : (v - lo) / (hi - lo)) * (H - m.t - m.b);
+
+    niceTicks(lo, hi, 4).forEach(v => {
+      if (v < lo - 1e-9 || v > hi + 1e-9) return;
+      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v),
+        stroke: css("--rule"), "stroke-width": 1 }));
+      const tx = svgEl("text", { x: m.l - 8, y: Y(v) + 3.5, "text-anchor": "end",
+        fill: css("--ink-3"), "font-size": 10.5, "font-family": css("--mono") });
+      tx.textContent = opts.yTick ? opts.yTick(v) : fmt(v, opts.yDigits ?? 2);
+      svg.appendChild(tx);
+    });
+    niceTicks(xLo, xHi, 4).forEach(v => {
+      if (v < xLo - 1e-9 || v > xHi + 1e-9) return;
+      const tx = svgEl("text", { x: X(v), y: H - 12, "text-anchor": "middle",
+        fill: css("--ink-3"), "font-size": 10.5, "font-family": css("--mono") });
+      tx.textContent = v >= 1000 ? (v / 1000) + "k" : v;
+      svg.appendChild(tx);
+    });
+    svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b,
+      stroke: css("--rule"), "stroke-width": 1 }));
+
+    if (opts.baseline != null && opts.baseline >= lo && opts.baseline <= hi) {
+      svg.appendChild(svgEl("line", { x1: m.l, x2: W - m.r,
+        y1: Y(opts.baseline), y2: Y(opts.baseline),
+        stroke: css("--ink-3"), "stroke-width": 1, "stroke-opacity": .8 }));
+      const bl = svgEl("text", { x: W - m.r, y: Y(opts.baseline) - 6, "text-anchor": "end",
+        fill: css("--ink-3"), "font-size": 10, "font-family": css("--mono") });
+      bl.textContent = opts.baselineLabel || "";
+      svg.appendChild(bl);
+    }
+
+    const pathFor = vals => {
+      let d = "", pen = false;
+      vals.forEach((v, i) => {
+        if (v == null || !isFinite(v)) { pen = false; return; }
+        d += (pen ? "L" : "M") + X(xs[i]).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+        pen = true;
+      });
+      return d;
+    };
+    series.forEach(s => {
+      if (s.smooth) {
+        svg.appendChild(svgEl("path", { d: pathFor(s.values), fill: "none",
+          stroke: s.color, "stroke-width": .9, "stroke-opacity": .22,
+          "stroke-linejoin": "round" }));
+      }
+      svg.appendChild(svgEl("path", { d: pathFor(s.plot), fill: "none", stroke: s.color,
+        "stroke-width": s.width || 2, "stroke-linecap": "round",
+        "stroke-linejoin": "round", "stroke-dasharray": s.dash || null,
+        "stroke-opacity": s.faded ? .42 : 1 }));
+    });
+
+    /* playhead marks the scrubbed step on every time series */
+    const ph = svgEl("line", { y1: m.t - 4, y2: H - m.b, stroke: css("--ink-3"),
+      "stroke-width": 1, "stroke-dasharray": "2 3", "stroke-opacity": .0 });
+    svg.appendChild(ph);
+
+    const focus = series.map(s => {
+      const c = svgEl("circle", { r: 4.5, fill: s.color, stroke: css("--panel"),
+        "stroke-width": 2, opacity: 0 });
+      svg.appendChild(c); return c;
+    });
+
+    const hit = svgEl("rect", { x: m.l, y: m.t - 6, width: Math.max(W - m.l - m.r, 1),
+      height: H - m.t - m.b + 6, fill: "transparent" });
+    svg.appendChild(hit);
+    const move = evt => {
+      const box = svg.getBoundingClientRect();
+      const px = (evt.clientX - box.left) * (W / box.width);
+      let best = 0, bd = Infinity;
+      xs.forEach((v, i) => { const d = Math.abs(X(v) - px); if (d < bd) { bd = d; best = i; } });
+      ph.setAttribute("x1", X(xs[best])); ph.setAttribute("x2", X(xs[best]));
+      ph.setAttribute("stroke-opacity", .55);
+      let html = `<b>step ${xs[best]}</b>`;
+      series.forEach((s, i) => {
+        const v = s.plot[best];
+        if (v == null || !isFinite(v)) { focus[i].setAttribute("opacity", 0); return; }
+        focus[i].setAttribute("cx", X(xs[best]));
+        focus[i].setAttribute("cy", Y(v));
+        focus[i].setAttribute("opacity", 1);
+        html += `<div class="row"><span>${s.name}</span><span>${
+          opts.tipFormat ? opts.tipFormat(v) : fmt(v, opts.yDigits ?? 3)}</span></div>`;
+      });
+      showTip(evt, html);
+    };
+    hit.addEventListener("mousemove", move);
+    hit.addEventListener("mouseleave", () => {
+      hideTip(); ph.setAttribute("stroke-opacity", 0);
+      focus.forEach(c => c.setAttribute("opacity", 0));
+    });
+    host.appendChild(svg);
+  };
+  register(host, draw);
+}
+
+function legend(host, items, before) {
+  const el = document.createElement("div");
+  el.className = "legend";
+  items.forEach(it => {
+    const s = document.createElement("span");
+    s.innerHTML = `<i class="swatch${it.dot ? " dot" : ""}" style="background:${it.color}${
+      it.dash ? ";background:repeating-linear-gradient(90deg," + it.color + " 0 4px,transparent 4px 7px)" : ""}"></i>${it.label}`;
+    el.appendChild(s);
+  });
+  if (before) host.insertBefore(el, before); else host.appendChild(el);
+}
+
+/* ------------------------------------------------------------ bar chart (h) */
+function barChart(host, opts) {
+  const draw = () => {
+    const rows = opts.rows();
+    const W = Math.max(host.clientWidth || 340, 240);
+    const rowH = 24, m = { t: 6, r: 52, b: 6, l: opts.labelWidth || 88 };
+    const H = m.t + m.b + rows.length * rowH;
+    host.textContent = "";
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H });
+    const max = Math.max(...rows.map(r => r.value), opts.min || 1e-9);
+    rows.forEach((r, i) => {
+      const y = m.t + i * rowH;
+      const w = Math.max((r.value / max) * (W - m.l - m.r), 1);
+      const label = svgEl("text", { x: m.l - 10, y: y + rowH / 2 + 3.5, "text-anchor": "end",
+        fill: css("--ink-2"), "font-size": 11, "font-family": css("--mono") });
+      label.textContent = r.label;
+      svg.appendChild(label);
+      const bar = svgEl("rect", { x: m.l, y: y + 4, width: w, height: rowH - 10,
+        rx: 3, fill: r.color || css("--ch-text") });
+      bar.addEventListener("mousemove", e => showTip(e,
+        `<b>${r.label}</b><div class="row"><span>${opts.unit || "value"}</span><span>${fmt(r.value, 3)}</span></div>`));
+      bar.addEventListener("mouseleave", hideTip);
+      svg.appendChild(bar);
+      const val = svgEl("text", { x: m.l + w + 8, y: y + rowH / 2 + 3.5,
+        fill: css("--ink-3"), "font-size": 10.5, "font-family": css("--mono") });
+      val.textContent = opts.format ? opts.format(r.value) : fmt(r.value, 3);
+      svg.appendChild(val);
+    });
+    host.appendChild(svg);
+  };
+  register(host, draw);
+}
+
+/* ----------------------------------------------------------- stack diagram */
+function stackDiagram(host) {
+  const draw = () => {
+    const run = RUNS[state.run];
+    const L = run.nLayers;
+    const W = Math.max(host.clientWidth || 640, 300);
+    const rowH = 44, top = 34, H = top + L * rowH + 58;
+    const colW = Math.min(178, (W - 90) * 0.34);
+    const gap = Math.max(96, W - 2 * colW - 96);
+    const xText = (W - gap) / 2 - colW, xImage = (W + gap) / 2;
+
+    host.textContent = "";
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H,
+      role: "img", "aria-label": "MoT stack, shaded by weight movement" });
+
+    const si = nearest(run.step, scrubStep(run));
+    const pi = nearest(run.probeStep, scrubStep(run));
+    const disp = run.displacement[si];
+    const mass = run.attentionMass[pi];
+    let peak = 0;
+    run.displacement.forEach(row => row.forEach(cell =>
+      cell.forEach(v => { if (v != null && v > peak) peak = v; })));
+    peak = peak || 1;
+
+    const heads = [[xText, "text expert", css("--ch-text")],
+                   [xImage, "image expert", css("--ch-image")]];
+    heads.forEach(([x, label, color]) => {
+      const t = svgEl("text", { x: x + colW / 2, y: 16, "text-anchor": "middle",
+        fill: color, "font-size": 11.5, "font-weight": 600, "font-family": css("--mono") });
+      t.textContent = label;
+      svg.appendChild(t);
+    });
+
+    for (let l = L - 1; l >= 0; l--) {
+      const y = top + (L - 1 - l) * rowH;
+      const lm = mass && mass[l];   // (query modality, key modality) at this layer
+      const cross = lm ? [1 - lm[TEXT][TEXT], 1 - lm[IMAGE][IMAGE]] : [0, 0];
+
+      /* the shared attention band: ribbon width is measured cross-modal mass */
+      const midY = y + 15;
+      const band = svgEl("path", {
+        d: `M ${xText + colW} ${midY} C ${xText + colW + gap * .35} ${midY - 9}, ${xImage - gap * .35} ${midY - 9}, ${xImage} ${midY}`,
+        fill: "none", stroke: css("--ch-text"),
+        "stroke-width": Math.max(0.6, cross[TEXT] * 17),
+        "stroke-opacity": .5, "stroke-linecap": "round" });
+      const band2 = svgEl("path", {
+        d: `M ${xImage} ${midY + 10} C ${xImage - gap * .35} ${midY + 19}, ${xText + colW + gap * .35} ${midY + 19}, ${xText + colW} ${midY + 10}`,
+        fill: "none", stroke: css("--ch-image"),
+        "stroke-width": Math.max(0.6, cross[IMAGE] * 17),
+        "stroke-opacity": .5, "stroke-linecap": "round" });
+      [[band, TEXT, "text → image"], [band2, IMAGE, "image → text"]].forEach(([el, m, lbl]) => {
+        el.style.cursor = "crosshair";
+        el.addEventListener("mousemove", e => showTip(e,
+          `<b>layer ${l} · ${lbl}</b><div class="row"><span>cross-modal mass</span><span>${pct(cross[m], 1)}</span></div>`));
+        el.addEventListener("mouseleave", hideTip);
+        svg.appendChild(el);
+      });
+
+      const ln = svgEl("text", { x: 12, y: y + 22, fill: css("--ink-3"),
+        "font-size": 10.5, "font-family": css("--mono") });
+      ln.textContent = "L" + l;
+      svg.appendChild(ln);
+
+      [[xText, TEXT, css("--ch-text")], [xImage, IMAGE, css("--ch-image")]].forEach(([x, m, color]) => {
+        const v = disp && disp[l] ? disp[l][m] : 0;
+        const alpha = 0.09 + 0.83 * Math.min(1, (v || 0) / peak);
+        const rect = svgEl("rect", { x, y, width: colW, height: rowH - 12, rx: 6,
+          fill: color, "fill-opacity": alpha, stroke: color, "stroke-opacity": .45,
+          "stroke-width": 1 });
+        rect.style.cursor = "crosshair";
+        rect.addEventListener("mousemove", e => showTip(e,
+          `<b>layer ${l} · ${NAMES[m]} expert</b>` +
+          `<div class="row"><span>weight movement</span><span>${fmt(v, 4)}</span></div>` +
+          `<div class="row"><span>step</span><span>${run.step[si]}</span></div>`));
+        rect.addEventListener("mouseleave", hideTip);
+        svg.appendChild(rect);
+        const val = svgEl("text", { x: x + colW / 2, y: y + 21, "text-anchor": "middle",
+          "font-size": 11, "font-family": css("--mono"),
+          fill: alpha > .55 ? css("--panel") : css("--ink-2") });
+        val.textContent = fmt(v, 3);
+        svg.appendChild(val);
+      });
+    }
+
+    const foot = svgEl("text", { x: W / 2, y: H - 30, "text-anchor": "middle",
+      fill: css("--ink-3"), "font-size": 11, "font-family": css("--mono") });
+    foot.textContent = "one global causal attention over the full interleaved sequence";
+    svg.appendChild(foot);
+    const foot2 = svgEl("text", { x: W / 2, y: H - 12, "text-anchor": "middle",
+      fill: css("--ink-3"), "font-size": 10.5, "font-family": css("--mono") });
+    foot2.textContent = run.blocked
+      ? "— except here: cross-modal attention is masked out —"
+      : "ribbon thickness = measured attention mass across the split";
+    svg.appendChild(foot2);
+    host.appendChild(svg);
+  };
+  register(host, draw);
+}
+
+/* --------------------------------------------------------- attribution grid */
+function attributionMatrix(host, runName) {
+  const run = RUNS[runName];
+  const wrap = document.createElement("div");
+  wrap.className = "panel";
+  wrap.innerHTML = `<h3>${titleize(runName)}</h3><p class="sub">${
+    run.blocked ? "cross-modal attention masked" :
+    run.optimizer === "sgd" ? "SGD, 85/15 tokens" :
+    run.lossWeighting === "modality_normalized" ? "loss normalised per modality" :
+    Math.round(run.textFrac * 100) + "/" + Math.round((1 - run.textFrac) * 100) + " token mixture"}</p>`;
+  const chart = document.createElement("div");
+  chart.className = "chart";
+  wrap.appendChild(chart);
+  host.appendChild(wrap);
+
+  const draw = () => {
+    const W = Math.max(chart.clientWidth || 260, 190);
+    const cell = Math.min(78, (W - 96) / 2), left = 92, top = 26;
+    const H = top + 2 * cell + 30;
+    chart.textContent = "";
+    const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H });
+    const pi = nearest(run.probeStep, scrubStep(run));
+    const raw = run.attribution[pi];
+    /* Normalise within each layer, then average the shares, so every layer counts
+       equally — the same aggregation the cross-modal-share chart uses. */
+    const rows = [0, 1].map(e => {
+      const vals = [0, 1].map(m =>
+        mean(Array.from({ length: run.nLayers }, (_, l) => raw[l][e][m])));
+      const share = [0, 1].map(m => mean(
+        Array.from({ length: run.nLayers }, (_, l) => {
+          const total = raw[l][e][0] + raw[l][e][1];
+          return total > 0 ? raw[l][e][m] / total : null;
+        })));
+      return { vals, share };
+    });
+
+    ["text loss", "image loss"].forEach((lbl, j) => {
+      const t = svgEl("text", { x: left + j * cell + cell / 2, y: 16,
+        "text-anchor": "middle", fill: css("--ink-3"), "font-size": 10.5,
+        "font-family": css("--mono") });
+      t.textContent = lbl;
+      svg.appendChild(t);
+    });
+
+    rows.forEach((row, i) => {
+      const lab = svgEl("text", { x: left - 12, y: top + i * cell + cell / 2 + 4,
+        "text-anchor": "end", fill: i === TEXT ? css("--ch-text") : css("--ch-image"),
+        "font-size": 10.5, "font-family": css("--mono") });
+      lab.textContent = NAMES[i] + " expert";
+      svg.appendChild(lab);
+      row.share.forEach((v, j) => {
+        const x = left + j * cell, y = top + i * cell;
+        const g = svgEl("rect", { x: x + 1, y: y + 1, width: cell - 2, height: cell - 2,
+          rx: 5, fill: css("--ch-text"), "fill-opacity": v == null ? .04 : .07 + .78 * v });
+        g.style.cursor = "crosshair";
+        g.addEventListener("mousemove", e => showTip(e,
+          `<b>${NAMES[i]} expert &larr; ${NAMES[j]} loss</b>` +
+          `<div class="row"><span>share of gradient</span><span>${pct(v, 1)}</span></div>` +
+          `<div class="row"><span>gradient norm</span><span>${row.vals[j].toExponential(2)}</span></div>`));
+        g.addEventListener("mouseleave", hideTip);
+        svg.appendChild(g);
+        const t = svgEl("text", { x: x + cell / 2, y: y + cell / 2 + 4.5,
+          "text-anchor": "middle", "font-size": 13, "font-weight": 600,
+          "font-family": css("--mono"),
+          fill: (v || 0) > .55 ? "#fff" : css("--ink") });
+        t.textContent = v == null ? "0%" : pct(v, 0);
+        svg.appendChild(t);
+      });
+    });
+    const cap = svgEl("text", { x: W / 2, y: H - 8, "text-anchor": "middle",
+      fill: css("--ink-3"), "font-size": 10, "font-family": css("--mono") });
+    cap.textContent = "rows sum to 100%";
+    svg.appendChild(cap);
+    chart.appendChild(svg);
+  };
+  register(chart, draw);
+}
+
+/* ------------------------------------------------------------------ helpers */
+const nearest = (arr, v) => {
+  let best = 0, bd = Infinity;
+  arr.forEach((x, i) => { const d = Math.abs(x - v); if (d < bd) { bd = d; best = i; } });
+  return best;
+};
+const scrubStep = run => Math.round(state.t * run.step[run.step.length - 1]);
+
+/* ------------------------------------------------------------------- render */
+function renderFacts() {
+  const ref = RUNS[SCRUBBABLE[0]];
+  const items = [
+    ["parameters", (ref.params.total / 1e6).toFixed(2) + "M"],
+    ["per expert / layer", (ref.params.per_expert_per_layer / 1e3).toFixed(0) + "k"],
+    ["layers &times; experts", ref.nLayers + " × 2"],
+    ["runs", Object.keys(RUNS).length],
+    ["steps each", ref.steps],
+  ];
+  document.getElementById("facts").innerHTML =
+    items.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+  document.getElementById("mast-eyebrow").textContent =
+    `Measured, not simulated · ${Object.keys(RUNS).length} training runs`;
+  document.getElementById("caveat-scale").innerHTML =
+    `<strong>Scale.</strong> ${(ref.params.total / 1e6).toFixed(2)}M parameters, ` +
+    `${ref.nLayers} layers, ${ref.steps} steps per run, on a CPU. The MoT paper's ` +
+    `results are at 7B. Everything here is a mechanism demonstration.`;
+}
+
+function renderExample() {
+  const ex = DATA.examples[0];
+  const host = document.getElementById("example");
+  const grid = document.createElement("div");
+  grid.className = "pixgrid";
+  ex.grid.forEach(row => row.forEach(c => {
+    const i = document.createElement("i");
+    if (c) i.style.background = DATA.swatches[c] || c;
+    grid.appendChild(i);
+  }));
+  const right = document.createElement("div");
+  right.style.cssText = "flex:1 1 300px;display:flex;flex-direction:column;gap:12px";
+  const mk = (title, toks, cls) => {
+    const box = document.createElement("div");
+    box.innerHTML = `<div class="eyebrow" style="margin-bottom:6px">${title}</div>`;
+    const row = document.createElement("div");
+    row.className = "tokens";
+    toks.forEach(t => {
+      const s = document.createElement("span");
+      s.className = "tok " + (t.startsWith("<") ? "s" : cls);
+      s.textContent = t;
+      row.appendChild(s);
+    });
+    box.appendChild(row);
+    return box;
+  };
+  right.appendChild(mk("caption tokens — text expert", ex.caption, "t"));
+  right.appendChild(mk("patch codes — image expert", ex.imageTokens, "i"));
+  host.appendChild(grid);
+  host.appendChild(right);
+}
+
+function renderControls() {
+  const sel = document.getElementById("run-select");
+  SCRUBBABLE.sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)).forEach(k => {
+    const o = document.createElement("option");
+    o.value = k; o.textContent = titleize(k);
+    sel.appendChild(o);
+  });
+  sel.value = state.run;
+  sel.addEventListener("change", () => { state.run = sel.value; update(); });
+
+  const range = document.getElementById("step-range");
+  range.addEventListener("input", () => {
+    state.t = +range.value / 100;
+    stop();
+    update();
+  });
+
+  const play = document.getElementById("play");
+  play.addEventListener("click", () => state.playing ? stop() : start());
+}
+
+let timer = null;
+function start() {
+  state.playing = true;
+  document.getElementById("play").innerHTML = "&#9632;&nbsp;Stop";
+  if (state.t >= 1) state.t = 0;
+  timer = setInterval(() => {
+    state.t = Math.min(1, state.t + 0.014);
+    document.getElementById("step-range").value = Math.round(state.t * 100);
+    update();
+    if (state.t >= 1) stop();
+  }, 90);
+}
+function stop() {
+  state.playing = false;
+  document.getElementById("play").innerHTML = "&#9654;&nbsp;Play";
+  if (timer) { clearInterval(timer); timer = null; }
+}
+
+function update() {
+  const run = RUNS[state.run];
+  document.getElementById("step-readout").textContent =
+    `${scrubStep(run)} / ${run.step[run.step.length - 1]}`;
+  document.getElementById("run-note").textContent = run.description;
+  redrawAll();
+  renderTakeaways();
+}
+
+/* ------------------------------------------------------------------- panels */
+function mean(a) {
+  const v = a.filter(x => x != null && isFinite(x));
+  return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
+}
+const perStepMean = (run, field, m) =>
+  run[field].map(row => mean(row.map(cell => cell[m])));
+const ratioSeries = (run, field) =>
+  run[field].map(row => mean(row.map(c =>
+    (c[TEXT] > 0 ? c[IMAGE] / c[TEXT] : null))));
+
+function buildPanels() {
+  stackDiagram(document.getElementById("stack-chart"));
+  legend(document.getElementById("stack-legend"), [
+    { color: css("--ch-text"), label: "text expert" },
+    { color: css("--ch-image"), label: "image expert" },
+    { color: css("--ink-3"), label: "shading = weight movement from init", dot: true },
+  ]);
+
+  lineChart(document.getElementById("disp-chart"), {
+    get x() { return RUNS[state.run].step; },
+    get series() {
+      const run = RUNS[state.run];
+      return [
+        { name: "text expert", color: css("--ch-text"), values: perStepMean(run, "displacement", TEXT) },
+        { name: "image expert", color: css("--ch-image"), values: perStepMean(run, "displacement", IMAGE) },
+      ];
+    },
+    zeroBase: true, yDigits: 3,
+    aria: "Weight movement from initialisation per expert",
+  });
+  legend(document.getElementById("disp-chart").parentElement, [
+    { color: css("--ch-text"), label: "text expert" },
+    { color: css("--ch-image"), label: "image expert" },
+  ]);
+
+  lineChart(document.getElementById("ratio-chart"), {
+    get x() { return RUNS[state.run].step; },
+    get series() {
+      return [{ name: "image / text", color: css("--ch-image"), smooth: 11,
+        values: ratioSeries(RUNS[state.run], "displacement") }];
+    },
+    baseline: 1, baselineLabel: "equal", yDigits: 2,
+    aria: "Ratio of image expert to text expert weight movement",
+  });
+
+  const holder = document.getElementById("attr-matrices");
+  ["balanced", "text_heavy", "blocked_attention"].filter(k => RUNS[k])
+    .forEach(k => attributionMatrix(holder, k));
+
+  lineChart(document.getElementById("cross-chart"), {
+    get x() { return RUNS[state.run].probeStep; },
+    get series() {
+      return SCRUBBABLE.map((k, i) => {
+        const run = RUNS[k];
+        const values = run.attribution.map(layers => {
+          const shares = layers.map(perExpert => {
+            const own = perExpert[IMAGE][IMAGE], other = perExpert[IMAGE][TEXT];
+            const total = own + other;
+            return total > 0 ? other / total : null;
+          });
+          return mean(shares);
+        });
+        return { name: titleize(k), values,
+          color: k === state.run ? css("--ch-image") : css("--ink-3"),
+          faded: k !== state.run, width: k === state.run ? 2.4 : 1.5 };
+      });
+    },
+    zeroBase: true, yDigits: 3,
+    yTick: v => (v * 100).toFixed(0) + "%",
+    tipFormat: v => pct(v, 1),
+    aria: "Share of the image expert's gradient arriving from the text loss",
+  });
+  legend(document.getElementById("cross-chart").parentElement, [
+    { color: css("--ch-image"), label: "selected run" },
+    { color: css("--ink-3"), label: "other runs" },
+  ]);
+
+  lineChart(document.getElementById("fusion-chart"), {
+    get x() { return Array.from({ length: RUNS[state.run].nLayers }, (_, i) => i); },
+    get series() {
+      const run = RUNS[state.run];
+      const pi = nearest(run.probeStep, scrubStep(run));
+      const mass = run.attentionMass[pi];
+      return [
+        { name: "text → image", color: css("--ch-text"),
+          values: mass.map(l => 1 - l[TEXT][TEXT]) },
+        { name: "image → text", color: css("--ch-image"),
+          values: mass.map(l => 1 - l[IMAGE][IMAGE]) },
+      ];
+    },
+    zeroBase: true, yTick: v => (v * 100).toFixed(0) + "%",
+    tipFormat: v => pct(v, 1), padLeft: 50,
+    aria: "Cross-modal attention by layer",
+  });
+  legend(document.getElementById("fusion-chart").parentElement, [
+    { color: css("--ch-text"), label: "text queries reading image" },
+    { color: css("--ch-image"), label: "image queries reading text" },
+  ]);
+
+  lineChart(document.getElementById("fusion-time-chart"), {
+    get x() { return RUNS[state.run].probeStep; },
+    get series() {
+      const run = RUNS[state.run];
+      return [
+        { name: "text → image", color: css("--ch-text"),
+          values: run.attentionMass.map(l => mean(l.map(x => 1 - x[TEXT][TEXT]))) },
+        { name: "image → text", color: css("--ch-image"),
+          values: run.attentionMass.map(l => mean(l.map(x => 1 - x[IMAGE][IMAGE]))) },
+      ];
+    },
+    zeroBase: true, yTick: v => (v * 100).toFixed(0) + "%",
+    tipFormat: v => pct(v, 1), padLeft: 50,
+    aria: "Cross-modal attention over training",
+  });
+
+  lineChart(document.getElementById("cka-chart"), {
+    get x() { return Array.from({ length: RUNS[state.run].nLayers }, (_, i) => i); },
+    get series() {
+      const run = RUNS[state.run];
+      const pi = nearest(run.probeStep, scrubStep(run));
+      return [
+        { name: "at scrubbed step", color: css("--ch-text"), values: run.cka[pi] },
+        { name: "at initialisation", color: css("--ink-3"), values: run.cka[0],
+          dash: "3 3", width: 1.5 },
+      ];
+    },
+    zeroBase: true, yDigits: 2, padLeft: 44,
+    aria: "Linear CKA between pooled text and image representations, by layer",
+  });
+  legend(document.getElementById("cka-chart").parentElement, [
+    { color: css("--ch-text"), label: "at scrubbed step" },
+    { color: css("--ink-3"), label: "at initialisation", dash: true },
+  ], document.getElementById("cka-note"));
+
+  lineChart(document.getElementById("div-chart"), {
+    get x() { return RUNS[state.run].probeStep; },
+    get series() {
+      const run = RUNS[state.run];
+      return Array.from({ length: run.nLayers }, (_, l) => ({
+        name: "layer " + l,
+        color: css("--ch-text"),
+        values: run.divergence.overall.map(row => row[l]),
+        width: 1.6 + 0.9 * (l / Math.max(1, run.nLayers - 1)),
+        faded: false,
+      })).map((s, l, arr) => ({ ...s,
+        color: l === 0 ? css("--ch-image") : css("--ch-text"),
+        faded: l !== 0 && l !== arr.length - 1 }));
+    },
+    zeroBase: true, yDigits: 2,
+    aria: "Divergence between the two experts per layer",
+  });
+  legend(document.getElementById("div-chart").parentElement, [
+    { color: css("--ch-image"), label: "layer 0" },
+    { color: css("--ch-text"), label: "layers 1–" + (RUNS[state.run].nLayers - 1) },
+  ]);
+
+  barChart(document.getElementById("div-parts-chart"), {
+    rows() {
+      const run = RUNS[state.run];
+      const pi = nearest(run.probeStep, scrubStep(run));
+      return Object.keys(run.divergence)
+        .filter(k => k !== "overall")
+        .map(k => ({ label: k, value: mean(run.divergence[k][pi]) || 0,
+          color: css("--ch-text") }))
+        .sort((a, b) => b.value - a.value);
+    },
+    unit: "relative L2", format: v => fmt(v, 3), labelWidth: 92,
+  });
+
+  const balPairs = ["text_heavy", "text_heavy_sgd"].filter(k => RUNS[k]);
+  const balColor = k => k.includes("sgd") ? css("--ch-image") : css("--ch-text");
+  const balLabel = k => RUNS[k].optimizer === "sgd" ? "SGD" : "AdamW";
+  [["bal-grad", "gradNorm", "step"], ["bal-update", "updateNorm", "step"]]
+    .forEach(([id, field]) => {
+      lineChart(document.getElementById(id), {
+        get x() { return RUNS[balPairs[0]].step; },
+        get series() {
+          return balPairs.map(k => ({ name: balLabel(k), color: balColor(k), smooth: 15,
+            values: ratioSeries(RUNS[k], field) }));
+        },
+        baseline: 1, baselineLabel: "equal", yDigits: 2, padLeft: 44,
+        aria: "Ratio between experts",
+      });
+      legend(document.getElementById(id).parentElement,
+        balPairs.map(k => ({ color: balColor(k), label: balLabel(k) })));
+    });
+
+  lineChart(document.getElementById("bal-snr"), {
+    get x() { return RUNS[balPairs[0]].probeStep; },
+    get series() {
+      return balPairs.map(k => {
+        const run = RUNS[k];
+        return { name: balLabel(k), color: balColor(k), smooth: 9,
+          values: run.gradSnr.map(row => mean(row.map(c =>
+            (c[TEXT] > 0 ? c[IMAGE] / c[TEXT] : null)))) };
+      });
+    },
+    baseline: 1, baselineLabel: "equal", yDigits: 2, padLeft: 44,
+    aria: "Gradient signal-to-noise ratio between experts",
+  });
+  legend(document.getElementById("bal-snr").parentElement,
+    balPairs.map(k => ({ color: balColor(k), label: balLabel(k) })));
+
+  [["loss-image", "valLossImage"], ["loss-text", "valLossText"]].forEach(([id, field]) => {
+    lineChart(document.getElementById(id), {
+      get x() { return RUNS[ORDER[0]].probeStep; },
+      get series() {
+        return ORDER.map(k => ({
+          name: titleize(k), values: RUNS[k][field],
+          color: k === state.run ? css("--ch-text")
+               : k === "blocked_attention" ? css("--ch-image") : css("--ink-3"),
+          faded: k !== state.run && k !== "blocked_attention",
+          width: k === state.run ? 2.4 : 1.6,
+        }));
+      },
+      yDigits: 2, padLeft: 44,
+      aria: "Held-out loss for every run",
+    });
+    legend(document.getElementById(id).parentElement, [
+      { color: css("--ch-text"), label: "selected run" },
+      { color: css("--ch-image"), label: "blocked attention" },
+      { color: css("--ink-3"), label: "other runs" },
+    ]);
+  });
+}
+
+function renderControlTable() {
+  const rows = SCRUBBABLE.map(k => {
+    const run = RUNS[k];
+    const last = run.attribution[run.attribution.length - 1];
+    let off = 0;
+    for (let l = 0; l < run.nLayers; l++) off += last[l][IMAGE][TEXT] + last[l][TEXT][IMAGE];
+    return { name: k, off: off / run.nLayers, blocked: run.blocked };
+  });
+  document.getElementById("control-table").innerHTML =
+    `<thead><tr><th>run</th><th>cross-modal gradient</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${titleize(r.name)}</td><td class="${r.off > 0 ? "pos" : "neg"}">${
+      r.off > 0 ? r.off.toExponential(2) : "exactly 0"}</td></tr>`).join("") +
+    `</tbody>`;
+}
+
+/* Rendered from the loaded numbers, so the stated direction cannot drift away
+   from the data if the runs are regenerated. */
+function renderNotConfirmed() {
+  const host = document.getElementById("not-confirmed");
+  const bal = RUNS.balanced, heavy = RUNS.text_heavy;
+  if (!host || !bal || !heavy) return;
+
+  const snrOf = run => mean(run.gradSnr[run.gradSnr.length - 1]
+    .map(c => c[TEXT] > 0 ? c[IMAGE] / c[TEXT] : null));
+  const crossOf = run => mean(run.attribution[run.attribution.length - 1].map(l => {
+    const total = l[IMAGE][IMAGE] + l[IMAGE][TEXT];
+    return total > 0 ? l[IMAGE][TEXT] / total : null;
+  }));
+
+  const items = [
+    {
+      claim: "“Starving a modality degrades its expert's gradient SNR.”",
+      measured: `image/text SNR ratio: balanced ${fmt(snrOf(bal), 2)} → text-heavy ${
+        fmt(snrOf(heavy), 2)} — it rose`,
+      why: `SNR here tracks how <em>predictable</em> a modality's tokens are, not how
+        many there are. Image patch codes are fully determined by the caption, while
+        the extra text comes from text-only documents whose captions are inherently
+        unpredictable — so the text expert holds the noisier gradient, not the image one.`,
+    },
+    {
+      claim: "“Global attention subsidises the starved expert most when it needs it most.”",
+      measured: `image expert's cross-modal gradient share: balanced ${
+        pct(crossOf(bal), 1)} → text-heavy ${pct(crossOf(heavy), 1)} — it fell sharply`,
+      why: `The subsidy runs the wrong way. A scarce modality offers <em>fewer keys</em>
+        for the abundant modality to attend to, so the abundant modality's loss reaches
+        the scarce expert less, not more. Joint attention is not a self-correcting
+        mechanism for token imbalance — if anything it withdraws support exactly where
+        the naive reading expects it to help.`,
+    },
+  ];
+  host.innerHTML = items.map(i =>
+    `<div class="wrong-item"><div class="claim">${i.claim}</div>` +
+    `<div class="measured">${i.measured}</div><p class="why">${i.why}</p></div>`).join("");
+}
+
+function renderSummary() {
+  const cols = [
+    ["run", r => titleize(r.name)],
+    ["tokens (text)", r => pct(r.textFrac, 0)],
+    ["val loss text", r => fmt(r.summary.val_loss_text, 3)],
+    ["val loss image", r => fmt(r.summary.val_loss_image, 3)],
+    ["image | caption", r => fmt(r.summary.image_given_text, 3)],
+    ["caption | image", r => fmt(r.summary.text_given_image, 3)],
+    ["move ratio", r => r.dense ? "—" : fmt(r.summary.displacement_ratio, 2)],
+    ["update ratio", r => r.dense ? "—" : fmt(r.summary.update_ratio, 2)],
+    ["SNR ratio", r => r.dense ? "—" : fmt(r.summary.snr_ratio, 2)],
+    ["divergence", r => r.dense ? "—" : fmt(r.summary.divergence_final, 3)],
+  ];
+  document.getElementById("summary-table").innerHTML =
+    `<thead><tr>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
+    ORDER.map(k => `<tr>${cols.map(c => `<td>${c[1](RUNS[k])}</td>`).join("")}</tr>`).join("") +
+    `</tbody>`;
+}
+
+/* Takeaways are computed from the loaded numbers, so they cannot drift from
+   what the charts show if the runs are regenerated. */
+function renderTakeaways() {
+  const bal = RUNS.balanced, heavy = RUNS.text_heavy, blocked = RUNS.blocked_attention;
+  const sgd = RUNS.text_heavy_sgd, norm = RUNS.text_heavy_normalized;
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+  if (heavy) {
+    const s = heavy.summary;
+    set("takeaway-1",
+      `<strong>Reading it:</strong> with image tokens at ${pct(1 - heavy.textFrac, 0)} of the ` +
+      `stream, the image expert ends at <b>${fmt(s.displacement_ratio, 2)}&times;</b> the text ` +
+      `expert's weight movement &mdash; against a token share of ` +
+      `${fmt((1 - heavy.textFrac) / heavy.textFrac, 2)}&times;. Token count and training ` +
+      `progress are not the same quantity.`);
+  }
+  if (bal) {
+    const s = bal.summary;
+    set("takeaway-2",
+      `<strong>Reading it:</strong> in the balanced run <b>${pct(s.cross_grad_frac_image, 0)}</b> ` +
+      `of the image expert's gradient arrives from the <em>text</em> loss, and ` +
+      `${pct(s.cross_grad_frac_text, 0)} of the text expert's arrives from the image loss. ` +
+      `A modality-specific expert is partly trained by the other modality's objective.`);
+  }
+  const run = RUNS[state.run];
+  const pi = nearest(run.probeStep, scrubStep(run));
+
+  /* fusion: report where cross-modal reading actually peaks, whatever that is */
+  const cross = run.attentionMass[pi].map(l =>
+    ((1 - l[TEXT][TEXT]) + (1 - l[IMAGE][IMAGE])) / 2);
+  const peakLayer = cross.indexOf(Math.max(...cross));
+  const lowLayer = cross.indexOf(Math.min(...cross));
+  set("takeaway-3",
+    `<strong>Reading it:</strong> at step ${scrubStep(run)}, cross-modal reading peaks at ` +
+    `<b>layer ${peakLayer}</b> (${pct(cross[peakLayer], 0)} of attention mass) and is ` +
+    `lowest at layer ${lowLayer} (${pct(cross[lowLayer], 0)}). Fusion is not spread ` +
+    `evenly through the stack — it concentrates.` +
+    (run.blocked ? " This run has cross-modal attention masked, so it is zero everywhere." : ""));
+
+  /* specialisation: name the layer and the component that actually moved most */
+  const div = run.divergence.overall[pi];
+  const topLayer = div.indexOf(Math.max(...div));
+  const parts = Object.keys(run.divergence).filter(k => k !== "overall");
+  const partVals = parts.map(k => ({ k, v: mean(run.divergence[k][pi]) || 0 }))
+    .sort((a, b) => b.v - a.v);
+  set("takeaway-4",
+    `<strong>Reading it:</strong> from an identical start the experts have pulled apart ` +
+    `most at <b>layer ${topLayer}</b> (relative L2 ${fmt(div[topLayer], 2)}), and the ` +
+    `component that specialises hardest is <b>${partVals[0].k}</b> ` +
+    `(${fmt(partVals[0].v, 2)}) versus ${partVals[partVals.length - 1].k} ` +
+    `(${fmt(partVals[partVals.length - 1].v, 2)}). Specialisation is not uniform across ` +
+    `either depth or component.`);
+
+  const cka0 = run.cka[0], ckaNow = run.cka[pi];
+  const dir = mean(ckaNow) > mean(cka0) ? "risen" : "fallen";
+  set("cka-note",
+    `Measured, including where it cuts against the tidy story: mean alignment has ` +
+    `${dir} from ${fmt(mean(cka0), 2)} at init to ${fmt(mean(ckaNow), 2)} here. ` +
+    `Attention mass shows the two streams reading each other; CKA asks whether their ` +
+    `pooled representations end up similar, and those are different questions.`);
+
+  if (heavy && sgd) {
+    const tail = arr => mean(arr.slice(-20));
+    const adamRatio = tail(ratioSeries(heavy, "updateNorm"));
+    const sgdRatio = tail(ratioSeries(sgd, "updateNorm"));
+    set("takeaway-5",
+      `<strong>Reading it:</strong> identical token imbalance, opposite signatures. ` +
+      `Under AdamW the starved image expert still takes steps <b>${fmt(adamRatio, 2)}&times;</b> ` +
+      `the text expert's; under SGD only <b>${fmt(sgdRatio, 2)}&times;</b>. The gradient ` +
+      `starvation is real in both &mdash; the first panel shows it &mdash; but the adaptive ` +
+      `optimiser absorbs it before it reaches the weights.` +
+      (norm ? ` The damage surfaces in the objective instead: normalising the loss per ` +
+        `modality moves held-out image loss from ${fmt(heavy.summary.val_loss_image, 3)} ` +
+        `to ${fmt(norm.summary.val_loss_image, 3)} nats.` : ""));
+  }
+
+  if (bal) {
+    const cka = bal.cka[bal.cka.length - 1];
+    const mid = mean(cka.slice(1, Math.max(2, cka.length - 2)));
+    const top = mean(cka.slice(-2));
+    set("caveat-null",
+      `<strong>Null and inverted results are shown, not filtered.</strong> Two ` +
+      `pre-registered predictions were contradicted (see above), and representational ` +
+      `alignment behaves non-monotonically &mdash; CKA collapses through the middle of ` +
+      `the stack (${fmt(mid, 2)}) while the top two layers stay aligned (${fmt(top, 2)}). ` +
+      `That is reported because it happened, not because it is tidy.`);
+  }
+}
+
+/* ---------------------------------------------------------------- bootstrap */
+renderFacts();
+renderExample();
+renderControls();
+buildPanels();
+renderControlTable();
+renderNotConfirmed();
+renderSummary();
+update();
+
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement,
+  { attributes: true, attributeFilter: ["data-theme"] });
+</script>
