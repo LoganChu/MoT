@@ -3,3 +3,5 @@ __pycache__/
 runs_logs/
 runs_pilot/
 viz/mot_dynamics.html
+runs_vlm/cache/
+runs_vlm/*.pt

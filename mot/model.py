@@ -43,6 +43,32 @@ class MoTConfig:
     blocked_attention: bool = False
     identical_expert_init: bool = True
 
+    # Queries of this modality read the rest of the stream through a detached
+    # key/value, so their loss cannot train any other modality's expert. The
+    # forward pass is unchanged -- only the gradient path is cut. Setting it to
+    # IMAGE asks the question freezing cannot: is the language model degraded by
+    # the image objective *reaching it through attention*, as opposed to by
+    # anything else multimodal training does?
+    insulate_modality: int | None = None
+
+    # --- partial and tapered decoupling -----------------------------------
+    # MoT decouples every non-embedding parameter. Neither of these is required
+    # by the architecture, and this study's own divergence numbers argue against
+    # both: the big projections pull far apart (wq 1.31, wk 1.28) while the
+    # layer norms barely differentiate at all (0.08-0.11), and alignment between
+    # the modalities recovers in the top layers after collapsing in the middle.
+    #
+    # `decoupled_submodules` names which sub-modules get one copy per modality;
+    # everything else gets a single shared copy. `shared_from_layer` shares
+    # *every* sub-module from that layer upwards, which is the depth taper.
+    decoupled_submodules: tuple[str, ...] = SUBMODULE_NAMES
+    shared_from_layer: int | None = None
+
+    def decoupled_here(self, layer: int, name: str) -> bool:
+        if self.shared_from_layer is not None and layer >= self.shared_from_layer:
+            return False
+        return name in self.decoupled_submodules
+
     @property
     def n_experts(self) -> int:
         return max(self.expert_of_modality) + 1
@@ -101,7 +127,8 @@ def route(
     `x` is (N, ...) with N = B*T. This is the deterministic modality routing from
     the reference implementation -- no learned router.
     """
-    if len(indices) == 1:
+    if len(experts) == 1 or len(indices) == 1:
+        # A shared sub-module, or a dense model: every row takes the same path.
         return experts[0](x)
     out = torch.zeros_like(x)
     for expert, idx in zip(experts, indices):
@@ -125,6 +152,8 @@ def route_rmsnorm(
     and the result is exactly equal to `route(x, norms, ...)`.
     """
     normed = x.float() * torch.rsqrt(x.float().pow(2).mean(-1, keepdim=True) + eps)
+    if len(norms) == 1:
+        return normed.type_as(x) * norms[0].weight
     weights = torch.stack([n.weight for n in norms])          # (E, dim)
     gathered = weights.index_select(0, expert_idx)             # (N, dim)
     if normed.dim() == 3:                                      # (N, heads, dim)
@@ -146,23 +175,28 @@ def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.T
 
 
 class MoTBlock(nn.Module):
-    def __init__(self, cfg: MoTConfig):
+    def __init__(self, cfg: MoTConfig, layer_index: int = 0):
         super().__init__()
         self.cfg = cfg
+        self.layer_index = layer_index
         n_e, d, hd = cfg.n_experts, cfg.d_model, cfg.head_dim
 
-        def per_expert(fn):
-            return nn.ModuleList([fn() for _ in range(n_e)])
+        def per_expert(name, fn):
+            count = n_e if cfg.decoupled_here(layer_index, name) else 1
+            return nn.ModuleList([fn() for _ in range(count)])
 
-        self.attn_norm = per_expert(lambda: RMSNorm(d))
-        self.wq = per_expert(lambda: nn.Linear(d, d, bias=False))
-        self.wk = per_expert(lambda: nn.Linear(d, d, bias=False))
-        self.wv = per_expert(lambda: nn.Linear(d, d, bias=False))
-        self.q_norm = per_expert(lambda: RMSNorm(hd))
-        self.k_norm = per_expert(lambda: RMSNorm(hd))
-        self.wo = per_expert(lambda: nn.Linear(d, d, bias=False))
-        self.ffn_norm = per_expert(lambda: RMSNorm(d))
-        self.ffn = per_expert(lambda: FeedForward(d, cfg.ffn_hidden))
+        self.attn_norm = per_expert("attn_norm", lambda: RMSNorm(d))
+        self.wq = per_expert("wq", lambda: nn.Linear(d, d, bias=False))
+        self.wk = per_expert("wk", lambda: nn.Linear(d, d, bias=False))
+        self.wv = per_expert("wv", lambda: nn.Linear(d, d, bias=False))
+        self.q_norm = per_expert("q_norm", lambda: RMSNorm(hd))
+        self.k_norm = per_expert("k_norm", lambda: RMSNorm(hd))
+        self.wo = per_expert("wo", lambda: nn.Linear(d, d, bias=False))
+        self.ffn_norm = per_expert("ffn_norm", lambda: RMSNorm(d))
+        self.ffn = per_expert("ffn", lambda: FeedForward(d, cfg.ffn_hidden))
+
+    def is_decoupled(self, name: str) -> bool:
+        return len(getattr(self, name)) > 1
 
     def forward(
         self,
@@ -172,6 +206,7 @@ class MoTBlock(nn.Module):
         rope: tuple[torch.Tensor, torch.Tensor],
         attn_allowed: torch.Tensor,   # (B|1, 1, T, T) bool, True = may attend
         need_probs: bool = False,
+        insulated_query: torch.Tensor | None = None,   # (B, T) bool
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
         cfg = self.cfg
         B, T, d = h.shape
@@ -200,6 +235,16 @@ class MoTBlock(nn.Module):
             scores = scores.masked_fill(~attn_allowed, float("-inf"))
             probs = torch.softmax(scores, dim=-1)
             attn = probs @ v
+        elif insulated_query is not None:
+            # The insulated queries read exactly the same keys and values -- the
+            # forward pass is bit-identical -- but read them detached, so no
+            # gradient from the loss at those positions travels into any other
+            # expert. Doing it at every layer closes every path, because
+            # attention is the only route between modalities.
+            attn = F.scaled_dot_product_attention(q, k, v, attn_mask=attn_allowed)
+            cut = F.scaled_dot_product_attention(
+                q, k.detach(), v.detach(), attn_mask=attn_allowed)
+            attn = torch.where(insulated_query[:, None, :, None], cut, attn)
         else:
             attn = F.scaled_dot_product_attention(q, k, v, attn_mask=attn_allowed)
 
@@ -210,7 +255,25 @@ class MoTBlock(nn.Module):
         return flat.view(B, T, d), probs
 
     def submodules(self, expert: int) -> dict[str, nn.Module]:
-        return {name: getattr(self, name)[expert] for name in SUBMODULE_NAMES}
+        """The sub-modules that belong to one expert alone.
+
+        A shared sub-module belongs to no expert and is deliberately absent. It
+        receives gradient from every modality, so counting it as part of an
+        expert would put mass on `grad_attribution`'s off-diagonal for a reason
+        that has nothing to do with attention -- and would break the
+        blocked-attention control, which has to come out at exactly zero.
+        """
+        if self.cfg.n_experts == 1:
+            # Nothing is decoupled because there is nothing to decouple from,
+            # and with a single expert there is no off-diagonal to protect --
+            # the one transformer is the expert.
+            return {name: getattr(self, name)[0] for name in SUBMODULE_NAMES}
+        return {name: getattr(self, name)[expert]
+                for name in SUBMODULE_NAMES if self.is_decoupled(name)}
+
+    def shared_submodules(self) -> dict[str, nn.Module]:
+        return {name: getattr(self, name)[0]
+                for name in SUBMODULE_NAMES if not self.is_decoupled(name)}
 
 
 class MoTModel(nn.Module):
@@ -218,7 +281,8 @@ class MoTModel(nn.Module):
         super().__init__()
         self.cfg = cfg
         self.embed = nn.Embedding(cfg.vocab_size, cfg.d_model)
-        self.layers = nn.ModuleList([MoTBlock(cfg) for _ in range(cfg.n_layers)])
+        self.layers = nn.ModuleList(
+            [MoTBlock(cfg, i) for i in range(cfg.n_layers)])
         self.final_norm = nn.ModuleList(
             [RMSNorm(cfg.d_model) for _ in range(cfg.n_experts)])
         self.lm_head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
@@ -275,11 +339,15 @@ class MoTModel(nn.Module):
             same = (modality[:, :, None] == modality[:, None, :]).unsqueeze(1)
             allowed = allowed & same
 
+        insulated = None
+        if self.cfg.insulate_modality is not None:
+            insulated = modality == self.cfg.insulate_modality
+
         h = self.embed(x)
         probs, hidden = [], []
         for layer in self.layers:
             h, p = layer(h, expert_idx, indices, (self.rope_cos, self.rope_sin),
-                         allowed, need_probs)
+                         allowed, need_probs, insulated)
             if need_probs:
                 probs.append(p)
             if need_hidden:

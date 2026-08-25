@@ -160,6 +160,12 @@ def expert_divergence(model: MoTModel) -> dict[str, np.ndarray]:
         b = model.expert_submodule_params(layer, 1)
         diff_sq = ref_sq = 0.0
         for name in SUBMODULE_NAMES:
+            if name not in a:
+                # Shared between the modalities, so the two experts hold the
+                # same tensor and the divergence is zero by construction rather
+                # than by measurement.
+                out[name][layer] = 0.0
+                continue
             d = sum(float((p - q).pow(2).sum()) for p, q in zip(a[name], b[name]))
             r = sum(float(p.pow(2).sum()) + float(q.pow(2).sum())
                     for p, q in zip(a[name], b[name])) / 2.0

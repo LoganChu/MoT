@@ -105,7 +105,12 @@ class ExpertTracker:
             init_sq = sum(float((p - q).pow(2).sum())
                           for p, q in zip(params, self.init[key]))
             update[key] = float(np.sqrt(step_sq))
-            displacement[key] = float(np.sqrt(init_sq)) / self.init_norm[key]
+            # A layer can own no parameters for an expert -- a fully shared
+            # layer under a depth taper -- in which case there is no
+            # displacement to report rather than an infinite one.
+            scale = self.init_norm[key]
+            displacement[key] = (float(np.sqrt(init_sq)) / scale
+                                 if scale > 0 else 0.0)
             for p, q in zip(params, self.prev[key]):
                 q.copy_(p)
         return update, displacement

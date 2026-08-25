@@ -39,6 +39,21 @@ IMG0 = POS0 + N_ANCHORS             # 29
 N_IMAGE_CODES = 1 + N_SHAPES * N_COLORS   # 49
 VOCAB_SIZE = IMG0 + N_IMAGE_CODES         # 78
 
+# --- text-corpus ids ------------------------------------------------------
+# Appended above VOCAB_SIZE so the caption/image study's vocabulary -- and
+# therefore its committed run logs -- are untouched. Only the VLM-recipe runs
+# use VLM_VOCAB_SIZE.
+VLM0 = VOCAB_SIZE                   # 78
+STMT = VLM0                         # 78  opens a factual statement
+ASSOC = VLM0 + 1                    # 79  opens an in-context association task
+QUERY = VLM0 + 2                    # 80  marks the association being asked for
+REL0 = VLM0 + 3                     # 81
+
+RELATIONS = ("above", "below", "left-of", "right-of", "near")
+N_RELATIONS = len(RELATIONS)
+
+VLM_VOCAB_SIZE = REL0 + N_RELATIONS   # 87
+
 # --- modality ---------------------------------------------------------------
 TEXT, IMAGE = 0, 1
 N_MODALITIES = 2
@@ -47,10 +62,10 @@ MODALITY_NAMES = ("text", "image")
 
 def _build_modality_table() -> np.ndarray:
     """Map every token id to its modality. Image brackets count as image."""
-    table = np.full(VOCAB_SIZE, TEXT, dtype=np.int64)
+    table = np.full(VLM_VOCAB_SIZE, TEXT, dtype=np.int64)
     table[BOI] = IMAGE
     table[EOI] = IMAGE
-    table[IMG0:] = IMAGE
+    table[IMG0:IMG0 + N_IMAGE_CODES] = IMAGE
     return table
 
 
@@ -76,7 +91,8 @@ def decode_image_code(code: int) -> tuple[int, int] | None:
 def describe(token_id: int) -> str:
     """Human-readable name for a token id, used in figures and the artifact."""
     specials = {PAD: "<pad>", DOC: "<doc>", BOT: "<bot>",
-                EOT: "<eot>", BOI: "<boi>", EOI: "<eoi>"}
+                EOT: "<eot>", BOI: "<boi>", EOI: "<eoi>",
+                STMT: "<stmt>", ASSOC: "<assoc>", QUERY: "<query>"}
     if token_id in specials:
         return specials[token_id]
     if COLOR0 <= token_id < SHAPE0:
@@ -85,6 +101,8 @@ def describe(token_id: int) -> str:
         return SHAPES[token_id - SHAPE0]
     if POS0 <= token_id < IMG0:
         return POSITIONS[token_id - POS0]
+    if REL0 <= token_id < REL0 + N_RELATIONS:
+        return RELATIONS[token_id - REL0]
     decoded = decode_image_code(token_id - IMG0)
     if decoded is None:
         return "img:empty"
