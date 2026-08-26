@@ -27,6 +27,23 @@ SUBMODULE_NAMES = ("attn_norm", "wq", "wk", "wv", "q_norm", "k_norm",
                    "wo", "ffn_norm", "ffn")
 
 
+@dataclass(frozen=True)
+class GeneratorSpec:
+    """The continuous side of a two-tower model.
+
+    Cosmos 3 pairs an autoregressive reasoner with a diffusion generator that
+    shares one transformer architecture and one joint attention operator with
+    it. The generator's tokens are not vocabulary entries at all -- they are
+    noised latents of what is being generated -- so the model needs a second
+    input path for them and a head that reads them back out. Those modules
+    belong to no tower: they are the analogue of the embedding table, which MoT
+    also leaves global.
+    """
+
+    latent_dim: int
+    n_slots: int
+
+
 @dataclass
 class MoTConfig:
     vocab_size: int
@@ -50,6 +67,17 @@ class MoTConfig:
     # the image objective *reaching it through attention*, as opposed to by
     # anything else multimodal training does?
     insulate_modality: int | None = None
+
+    # --- two-tower (Cosmos 3) settings -------------------------------------
+    # `generator` switches on the continuous path; `generator_modality` says
+    # which modality id those tokens carry, so routing sends them to their own
+    # tower. `tower_attention` installs the mask the architecture implies:
+    # the reasoner is causal and never reads the generator -- which is what
+    # lets it be called on its own -- while the generator's noisy tokens see
+    # each other in full and read the whole reasoner.
+    generator: GeneratorSpec | None = None
+    generator_modality: int | None = None
+    tower_attention: bool = False
 
     # --- partial and tapered decoupling -----------------------------------
     # MoT decouples every non-embedding parameter. Neither of these is required
@@ -289,6 +317,14 @@ class MoTModel(nn.Module):
         if cfg.tie_embeddings:
             self.lm_head.weight = self.embed.weight
 
+        if cfg.generator is not None:
+            spec, d = cfg.generator, cfg.d_model
+            self.gen_in = nn.Linear(spec.latent_dim, d)
+            self.gen_out = nn.Linear(d, spec.latent_dim)
+            self.gen_slot = nn.Embedding(spec.n_slots, d)
+            self.time_mlp = nn.Sequential(
+                nn.Linear(d, d), nn.SiLU(), nn.Linear(d, d))
+
         cos, sin = build_rope_cache(cfg.seq_len, cfg.head_dim, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
@@ -322,19 +358,54 @@ class MoTModel(nn.Module):
                 for expert in list(group)[1:]:
                     expert.load_state_dict(reference)
 
+    def timestep_embedding(self, flow_t: torch.Tensor) -> torch.Tensor:
+        """Sinusoidal features of the diffusion time, then an MLP. (B,) -> (B, d)."""
+        half = self.cfg.d_model // 2
+        freqs = torch.exp(
+            -math.log(10_000.0) * torch.arange(half, device=flow_t.device) / half)
+        angles = flow_t[:, None].float() * freqs[None, :] * 1000.0
+        return self.time_mlp(torch.cat([angles.cos(), angles.sin()], dim=-1))
+
+    def tower_mask(self, is_generator: torch.Tensor) -> torch.Tensor:
+        """(B, 1, T, T) bool: the mask a two-tower model implies.
+
+        Causal everywhere, then two amendments. The generator's noisy tokens see
+        each other in full, because they are denoised jointly and a causal order
+        over them would be arbitrary. And every edge from a reasoner query to a
+        generator key is removed, so the reasoner's forward pass does not depend
+        on the generator at all -- which is what makes "the reasoner can be
+        called independently" true of this model rather than merely asserted.
+        """
+        B, T = is_generator.shape
+        allowed = torch.tril(
+            torch.ones(T, T, dtype=torch.bool, device=is_generator.device))
+        allowed = allowed.view(1, 1, T, T).expand(B, 1, T, T).clone()
+        gen = is_generator[:, None, :, None] & is_generator[:, None, None, :]
+        allowed |= gen
+        reads_generator = (~is_generator)[:, None, :, None] &             is_generator[:, None, None, :]
+        allowed &= ~reads_generator
+        return allowed
+
     def forward(
         self,
         x: torch.Tensor,          # (B, T) token ids
         modality: torch.Tensor,   # (B, T) modality ids
         need_probs: bool = False,
         need_hidden: bool = False,
+        generator: dict | None = None,
+        attn_allowed: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, dict]:
         B, T = x.shape
         expert_idx = self.expert_lookup[modality].reshape(B * T)
         indices = expert_indices(expert_idx, self.cfg.n_experts)
 
-        allowed = torch.tril(torch.ones(T, T, dtype=torch.bool, device=x.device))
-        allowed = allowed.view(1, 1, T, T)
+        if attn_allowed is not None:
+            allowed = attn_allowed
+        elif self.cfg.tower_attention and generator is not None:
+            allowed = self.tower_mask(generator["is_generator"])
+        else:
+            allowed = torch.tril(
+                torch.ones(T, T, dtype=torch.bool, device=x.device)).view(1, 1, T, T)
         if self.cfg.blocked_attention:
             same = (modality[:, :, None] == modality[:, None, :]).unsqueeze(1)
             allowed = allowed & same
@@ -344,6 +415,14 @@ class MoTModel(nn.Module):
             insulated = modality == self.cfg.insulate_modality
 
         h = self.embed(x)
+        if generator is not None:
+            slots = self.gen_slot.weight[None, :generator["noisy"].shape[1], :]
+            time = self.timestep_embedding(generator["flow_t"])[:, None, :]
+            injected = torch.zeros_like(h)
+            injected[generator["is_generator"]] = (
+                self.gen_in(generator["noisy"]) + slots + time
+            ).reshape(-1, self.cfg.d_model)
+            h = h + injected
         probs, hidden = [], []
         for layer in self.layers:
             h, p = layer(h, expert_idx, indices, (self.rope_cos, self.rope_sin),
@@ -354,8 +433,14 @@ class MoTModel(nn.Module):
                 hidden.append(h)
 
         h = route_rmsnorm(h.reshape(B * T, self.cfg.d_model), self.final_norm, expert_idx)
-        logits = self.lm_head(h.view(B, T, self.cfg.d_model))
-        return logits, {"probs": probs, "hidden": hidden}
+        h = h.view(B, T, self.cfg.d_model)
+        logits = self.lm_head(h)
+
+        aux: dict = {"probs": probs, "hidden": hidden}
+        if generator is not None:
+            slots = h[generator["is_generator"]].view(B, -1, self.cfg.d_model)
+            aux["velocity"] = self.gen_out(slots)
+        return logits, aux
 
     # --- parameter bookkeeping used by the probes ---------------------------
 

@@ -143,21 +143,25 @@ def attention_mass(model: MoTModel, batch: Batch) -> np.ndarray:
 
 
 @torch.no_grad()
-def expert_divergence(model: MoTModel) -> dict[str, np.ndarray]:
-    """Relative L2 distance between expert 0 and expert 1, per layer.
+def expert_divergence(
+    model: MoTModel, pair: tuple[int, int] = (0, 1)
+) -> dict[str, np.ndarray]:
+    """Relative L2 distance between two experts, per layer.
 
     Zero at step 0 by construction (identical init), so this curve is a clean
-    readout of specialisation caused purely by training.
+    readout of specialisation caused purely by training. `pair` exists because a
+    model can have more than two experts -- a three-tower layout, say -- and the
+    interesting comparisons are then pairwise.
     """
     n_layers = model.cfg.n_layers
     names = ("overall",) + SUBMODULE_NAMES
     out = {name: np.zeros(n_layers, dtype=np.float64) for name in names}
-    if model.cfg.n_experts < 2:
+    if max(pair) >= model.cfg.n_experts:
         return {name: np.full(n_layers, np.nan) for name in names}
 
     for layer in range(n_layers):
-        a = model.expert_submodule_params(layer, 0)
-        b = model.expert_submodule_params(layer, 1)
+        a = model.expert_submodule_params(layer, pair[0])
+        b = model.expert_submodule_params(layer, pair[1])
         diff_sq = ref_sq = 0.0
         for name in SUBMODULE_NAMES:
             if name not in a:
@@ -250,4 +254,41 @@ class GradientSNR:
             second = sum(float(s.sum()) for s in self.sq[key]) / correction
             noise = max(second - signal, 0.0)
             out[key] = float(np.sqrt(signal) / np.sqrt(noise)) if noise > 0 else float("nan")
+        return out
+
+
+class ExpertDrift:
+    """Distance of each expert from a reference checkpoint, per layer.
+
+    Snapshot the model after text pretraining and this reads out, at any later
+    point, how far multimodal training has dragged the language model away from
+    what it knew -- separately for the expert that sees text and the one that
+    never does.
+    """
+
+    def __init__(self, model: MoTModel):
+        self.grid = model.expert_params()
+        self.reference = {k: [p.detach().clone() for p in v]
+                          for k, v in self.grid.items()}
+        self.scale = {
+            k: float(np.sqrt(sum(float(p.pow(2).sum()) for p in v)))
+            for k, v in self.reference.items()
+        }
+
+    @torch.no_grad()
+    def rebase(self, model: MoTModel) -> None:
+        """Make the model's current weights the new reference."""
+        for key, params in self.grid.items():
+            for stored, live in zip(self.reference[key], params):
+                stored.copy_(live)
+            self.scale[key] = float(
+                np.sqrt(sum(float(p.pow(2).sum()) for p in params)))
+
+    @torch.no_grad()
+    def drift(self) -> dict[tuple[int, int], float]:
+        out: dict[tuple[int, int], float] = {}
+        for key, params in self.grid.items():
+            moved = sum(float((p - q).pow(2).sum())
+                        for p, q in zip(params, self.reference[key]))
+            out[key] = float(np.sqrt(moved)) / max(self.scale[key], 1e-12)
         return out

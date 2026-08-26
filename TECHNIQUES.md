@@ -14,19 +14,19 @@ what follows is a way of relaxing it in one direction or another.
 ## Decoupling less than everything
 
 **Partial decoupling — share the sub-modules that never differentiate.**
-*Implemented:* `decoupled_submodules`, arms `vlm_share_norms`,
-`vlm_attention_only`, `vlm_ffn_only`.
+*Implemented:* `decoupled_submodules`, arms `cosmos_share_norms`,
+`cosmos_attention_only`, `cosmos_ffn_only`.
 
 The caption/image study measures, per sub-module, how far the two experts
 actually pull apart: `wq` 1.31, `wk` 1.28, `wo` 1.26, `wv` 1.22, `ffn` 1.17 —
 and the layer norms at 0.08–0.11. A parameter that ends up in the same place for
 both modalities did not need two copies. The three arms split the difference
-three ways, and `vlm_ffn_only` doubles as the question of whether MoT buys
+three ways, and `cosmos_ffn_only` doubles as the question of whether MoT buys
 anything a modality-aware mixture of experts would not, since an MoE decouples
 the feed-forward network and nothing else.
 
 **Depth-tapered decoupling.** *Implemented:* `shared_from_layer`, arm
-`vlm_taper`.
+`cosmos_taper`.
 
 Linear CKA between the modalities collapses through the middle of the stack
 (0.78 → 0.16) and recovers at the top (0.93 → 0.86), while cross-modal attention
@@ -45,17 +45,17 @@ learned sparse-FFN routing inside each modality expert. Adds capacity without
 the load-balancing pathology, because the modality routing stays deterministic
 and only the inner routing is learned.
 
-**Mixture-of-Depths for the image stream.** *Not implemented.* Image tokens are
-the redundant majority — over half the stream in the `pairs` regime here. Letting
-them exit early compounds with the FLOP saving MoT already gets from skipping the
-other modality's feed-forward network.
+**Mixture-of-Depths for the observation stream.** *Not implemented.* Observation
+tokens are the majority of a two-tower sequence. Letting them exit early
+compounds with the FLOP saving MoT already gets from skipping the other tower's
+feed-forward network.
 
 ---
 
 ## Optimisation
 
 **Muon instead of AdamW.** *Implemented:* `optimizer="muon"`, `mot/optim.py`,
-arm `vlm_muon`.
+arm `cosmos_muon`.
 
 The caption/image study's headline result is that weight movement is close to
 scale-free in the gradient *because Adam divides by a running second moment* — an
@@ -76,42 +76,35 @@ arm is the crudest member of this family, and every one of them is directly
 visible in `grad_attribution`.
 
 **Selective stop-gradient.** *Implemented:* `insulate_modality`, arm
-`vlm_insulated`.
+`cosmos_insulated`.
 
 Cut one modality's loss out of another modality's expert without freezing
-anything. Here it isolates whether multimodal forgetting travels along the
-cross-modal attention path; the same mechanism is what knowledge-insulation
-schemes use to protect a backbone from a second objective.
+anything. Here it isolates whether a diffusion objective damages the vision-language
+model it is bolted to; the same mechanism is what knowledge-insulation schemes
+use to protect a backbone from a second objective.
 
 ---
 
 ## Initialisation and data
 
-**Sparse upcycling.** *Implemented:* `upcycle`, arm `vlm_upcycled`.
+**Sparse upcycling.** *Implemented:* `upcycle`, arm `cosmos_no_upcycle`.
 
-Start the image expert from the pretrained language model rather than from
-noise, which is what every real VLM does when it initialises from something
-already trained. Free here, because stage 0 produces exactly such a checkpoint.
+Start the second tower from the pretrained vision-language model rather than
+from noise. Cosmos 3 initialises *both* of its towers from pretrained Qwen3-VL
+weights, so upcycling is the faithful default here and the arm is its ablation.
 
-**Interleaved rather than paired multimodal data.** *Implemented:* the
-`interleaved` regime, arm `vlm_interleaved`.
+**Cross-objective insulation.** *Implemented:* `insulate_modality`, arm
+`cosmos_insulated`.
 
-VILA's central pre-training result, and the reason it is in this repo at all:
-training on caption-image pairs degrades text-only accuracy by 17.2% while
-interleaved documents cost about 5%, because a caption corpus quietly replaces
-the text distribution the language model was trained on.
+A two-tower model puts an autoregressive objective and a diffusion objective on
+one attention operator, and the second reaches the first whether or not you
+wanted it to. Cutting that path -- without freezing anything, so the reasoner
+still trains on its own loss -- is the only way to attribute a change to that
+gradient specifically.
 
-**Text replay.** *Implemented:* the `blend` regime, arms `vlm_blend` and
-`vlm_pairs_sft_blend`.
-
-Mixing text-only data back in, either during multimodal pretraining or only at
-instruction tuning. VILA reports the latter recovering MMLU from 40.7% to 51.4%
-*and* improving the visual scores at the same time.
-
-**Staged training with a freeze schedule.** *Implemented:* `Stage.freeze`, arm
-`vlm_frozen_lm`. Align, pretrain, instruction-tune — and the finding that
-freezing the language model through pretraining preserves zero-shot accuracy
-while costing in-context learning (72.1% → 58.1% at four shots).
+**Freezing the conditioning tower.** *Implemented:* `freeze_reasoner`, arm
+`cosmos_frozen_reasoner`. The blunt version of the above, and the pair says
+whether the reasoner needs to adapt to the generator or merely be left alone.
 
 ---
 
@@ -133,7 +126,6 @@ loss curve. *Not implemented; out of scope for a CPU-sized study.*
 | Depth taper | `shared_from_layer` | `layerwise_cka`, `attention_mass` |
 | Muon | `optimizer` | `displacement`, `GradientSNR` |
 | Selective stop-gradient | `insulate_modality` | `grad_attribution` |
-| Sparse upcycling | `upcycle` | image loss, `ExpertDrift` |
-| Interleaved data | regime | `statement_acc`, `assoc4_acc` |
-| Text replay | regime | the same, after the stage that adds it |
-| Freeze schedule | `Stage.freeze` | `ExpertDrift`, in-context gain |
+| Sparse upcycling | `upcycle` | generator quality, `ExpertDrift` |
+| Cross-objective insulation | `insulate_modality` | `tower_attribution` |
+| Freezing a tower | `freeze_reasoner` | `ExpertDrift`, generator quality |

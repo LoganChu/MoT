@@ -1,7 +1,7 @@
 """Train one run: `python scripts/run.py balanced` or `... vlm_pairs`.
 
-The name selects the suite: caption/image runs land in `runs/`, staged VLM runs
-in `runs_vlm/`, because their log schemas differ.
+The name selects the suite: caption/image runs land in `runs/`, two-tower runs
+in `runs_cosmos/`, because their log schemas differ.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ import torch
 
 from mot.configs import RUNS
 from mot.train import train
-from mot.vlm_configs import VLM_RUNS
-from mot.vlm_train import train as train_vlm
+from mot.cosmos_configs import COSMOS_RUNS
+from mot.cosmos_train import train as train_cosmos
 
-ALL_RUNS = {**RUNS, **VLM_RUNS}
+ALL_RUNS = {**RUNS, **COSMOS_RUNS}
 
 
 def main() -> int:
@@ -34,15 +34,15 @@ def main() -> int:
     if args.threads > 0:
         torch.set_num_threads(args.threads)
 
-    is_vlm = args.run in VLM_RUNS
+    is_cosmos = args.run in COSMOS_RUNS
     cfg = ALL_RUNS[args.run]
-    out = Path(args.out or ("runs_vlm" if is_vlm else "runs"))
-    if args.steps > 0 and not is_vlm:
+    out = Path(args.out or ("runs_cosmos" if is_cosmos else "runs"))
+    if args.steps > 0:
         cfg = type(cfg)(**{**cfg.__dict__, "steps": args.steps})
 
     print(f"[{cfg.name}] {cfg.description}", flush=True)
-    if is_vlm:
-        train_vlm(cfg, out, cache_dir=Path("runs_vlm/cache"))
+    if is_cosmos:
+        train_cosmos(cfg, out, cache_dir=Path("runs_cosmos/cache"))
     else:
         train(cfg, out)
     return 0

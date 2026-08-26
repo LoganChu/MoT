@@ -39,33 +39,37 @@ IMG0 = POS0 + N_ANCHORS             # 29
 N_IMAGE_CODES = 1 + N_SHAPES * N_COLORS   # 49
 VOCAB_SIZE = IMG0 + N_IMAGE_CODES         # 78
 
-# --- text-corpus ids ------------------------------------------------------
+# --- two-tower (Cosmos 3) ids ---------------------------------------------
 # Appended above VOCAB_SIZE so the caption/image study's vocabulary -- and
-# therefore its committed run logs -- are untouched. Only the VLM-recipe runs
-# use VLM_VOCAB_SIZE.
-VLM0 = VOCAB_SIZE                   # 78
-STMT = VLM0                         # 78  opens a factual statement
-ASSOC = VLM0 + 1                    # 79  opens an in-context association task
-QUERY = VLM0 + 2                    # 80  marks the association being asked for
-REL0 = VLM0 + 3                     # 81
+# therefore its committed run logs -- are untouched.
+COSMOS0 = VOCAB_SIZE                 # 78
+RULE0 = COSMOS0                      # 78  world-transition rules
+N_WORLD_RULES = 5
+GEN = RULE0 + N_WORLD_RULES          # 83  a generator-tower slot
 
-RELATIONS = ("above", "below", "left-of", "right-of", "near")
-N_RELATIONS = len(RELATIONS)
-
-VLM_VOCAB_SIZE = REL0 + N_RELATIONS   # 87
+COSMOS_VOCAB_SIZE = GEN + 1          # 84
 
 # --- modality ---------------------------------------------------------------
 TEXT, IMAGE = 0, 1
 N_MODALITIES = 2
 MODALITY_NAMES = ("text", "image")
 
+# The generator tower's slots. They carry no vocabulary meaning -- their
+# embeddings are noised latents injected by the model's continuous path -- but
+# they need a modality so that deterministic routing sends them to their own
+# tower.
+GENERATOR = 2
+N_COSMOS_MODALITIES = 3
+COSMOS_MODALITY_NAMES = ("text", "image", "generator")
+
 
 def _build_modality_table() -> np.ndarray:
     """Map every token id to its modality. Image brackets count as image."""
-    table = np.full(VLM_VOCAB_SIZE, TEXT, dtype=np.int64)
+    table = np.full(COSMOS_VOCAB_SIZE, TEXT, dtype=np.int64)
     table[BOI] = IMAGE
     table[EOI] = IMAGE
     table[IMG0:IMG0 + N_IMAGE_CODES] = IMAGE
+    table[GEN] = GENERATOR
     return table
 
 
@@ -92,7 +96,7 @@ def describe(token_id: int) -> str:
     """Human-readable name for a token id, used in figures and the artifact."""
     specials = {PAD: "<pad>", DOC: "<doc>", BOT: "<bot>",
                 EOT: "<eot>", BOI: "<boi>", EOI: "<eoi>",
-                STMT: "<stmt>", ASSOC: "<assoc>", QUERY: "<query>"}
+                GEN: "<gen>"}
     if token_id in specials:
         return specials[token_id]
     if COLOR0 <= token_id < SHAPE0:
@@ -101,8 +105,9 @@ def describe(token_id: int) -> str:
         return SHAPES[token_id - SHAPE0]
     if POS0 <= token_id < IMG0:
         return POSITIONS[token_id - POS0]
-    if REL0 <= token_id < REL0 + N_RELATIONS:
-        return RELATIONS[token_id - REL0]
+    if RULE0 <= token_id < RULE0 + N_WORLD_RULES:
+        from mot.world import RULES
+        return RULES[token_id - RULE0]
     decoded = decode_image_code(token_id - IMG0)
     if decoded is None:
         return "img:empty"

@@ -1,7 +1,15 @@
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Per-run logs, and the interactive page built from the committed run data.
 runs_logs/
 runs_pilot/
 viz/mot_dynamics.html
-runs_vlm/cache/
-runs_vlm/*.pt
+
+# The two-tower suite writes a model checkpoint beside every run so a
+# measurement that turns out to be the wrong one can be recomputed without
+# retraining, and caches the shared vision-language model it starts from.
+# Together those are ~120 MB; the run logs themselves are small and committed.
+runs_cosmos/cache/
+runs_cosmos/*.pt

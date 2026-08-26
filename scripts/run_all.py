@@ -18,10 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from mot.configs import RUNS
-from mot.vlm_configs import VLM_RUNS
+from mot.cosmos_configs import COSMOS_RUNS
 
-SUITES = {"base": sorted(RUNS), "vlm": sorted(VLM_RUNS),
-          "all": sorted(RUNS) + sorted(VLM_RUNS)}
+SUITES = {"base": sorted(RUNS), "cosmos": sorted(COSMOS_RUNS),
+          "all": sorted(RUNS) + sorted(COSMOS_RUNS)}
 
 
 def main() -> int:
@@ -36,16 +36,14 @@ def main() -> int:
 
     names = args.only or SUITES[args.suite]
 
-    # Every VLM arm starts from the same pretrained language model. Build it
-    # once here rather than letting nine processes race to train the same
-    # checkpoint -- and so that the arms are exactly comparable.
-    vlm_names = [n for n in names if n in VLM_RUNS]
-    if vlm_names:
-        from mot.vlm_train import ensure_text_base
+    cosmos_names = [n for n in names if n in COSMOS_RUNS]
+    if cosmos_names:
+        from mot.cosmos_train import ensure_pretrained
 
-        print("building the shared text base (cached after the first time)",
+        print("building the shared vision-language model for the two-tower suite",
               flush=True)
-        ensure_text_base(VLM_RUNS[vlm_names[0]], ROOT / "runs_vlm" / "cache")
+        ensure_pretrained(COSMOS_RUNS[cosmos_names[0]],
+                          ROOT / "runs_cosmos" / "cache")
     log_dir = ROOT / "runs_logs"
     log_dir.mkdir(exist_ok=True)
 
@@ -59,10 +57,10 @@ def main() -> int:
                # other and the machine sits mostly idle while every run crawls.
                "OMP_WAIT_POLICY": "PASSIVE",
                "PYTHONPATH": str(ROOT)}
-        out = args.out or ("runs_vlm" if name in VLM_RUNS else "runs")
+        out = args.out or ("runs_cosmos" if name in COSMOS_RUNS else "runs")
         cmd = [sys.executable, str(ROOT / "scripts" / "run.py"), name,
                "--out", out, "--threads", str(args.threads)]
-        if args.steps and name not in VLM_RUNS:
+        if args.steps and name not in COSMOS_RUNS:
             cmd += ["--steps", str(args.steps)]
         handle = (log_dir / f"{name}.log").open("w", encoding="utf-8")
         procs.append((name, subprocess.Popen(cmd, cwd=ROOT, env=env,
