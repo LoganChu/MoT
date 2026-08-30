@@ -1,0 +1,763 @@
+{
+ "benchmark": "textvqa",
+ "arm": "mrope_swap_hw",
+ "model": "Qwen/Qwen3-VL-2B-Instruct",
+ "reused": 0,
+ "description": "Height and width coordinates exchanged. The 2-D structure survives intact and only its orientation changes, so this separates 'uses a grid' from 'uses the right axes'.",
+ "n": 150,
+ "metric": "VQA-acc",
+ "mean": 0.7200000000000001,
+ "seconds": 115.95164322853088,
+ "per_question": [
+  {
+   "qid": "37757",
+   "pred": "12",
+   "score": 0.0
+  },
+  {
+   "qid": "38047",
+   "pred": "yes",
+   "score": 1.0
+  },
+  {
+   "qid": "34933",
+   "pred": "left",
+   "score": 1.0
+  },
+  {
+   "qid": "36723",
+   "pred": "no",
+   "score": 1.0
+  },
+  {
+   "qid": "38790",
+   "pred": "breitling",
+   "score": 1.0
+  },
+  {
+   "qid": "38582",
+   "pred": "christoph ward",
+   "score": 0.0
+  },
+  {
+   "qid": "37919",
+   "pred": "dog house",
+   "score": 1.0
+  },
+  {
+   "qid": "37086",
+   "pred": "t",
+   "score": 0.0
+  },
+  {
+   "qid": "38506",
+   "pred": "2005",
+   "score": 1.0
+  },
+  {
+   "qid": "37535",
+   "pred": "yes",
+   "score": 1.0
+  },
+  {
+   "qid": "39381",
+   "pred": "tp8-435",
+   "score": 0.0
+  },
+  {
+   "qid": "36391",
+   "pred": "11:51",
+   "score": 1.0
+  },
+  {
+   "qid": "38736",
+   "pred": "m",
+   "score": 1.0
+  },
+  {
+   "qid": "35742",
+   "pred": "59",
+   "score": 1.0
+  },
+  {
+   "qid": "36910",
+   "pred": "154-jdx",
+   "score": 0.6666666666666666
+  },
+  {
+   "qid": "35746",
+   "pred": "mitsubishi",
+   "score": 1.0
+  },
+  {
+   "qid": "35378",
+   "pred": "elevator to dey st & broadway",
+   "score": 0.0
+  },
+  {
+   "qid": "36654",
+   "pred": "lg",
+   "score": 1.0
+  },
+  {
+   "qid": "38964",
+   "pred": "sexylady",
+   "score": 1.0
+  },
+  {
+   "qid": "39532",
+   "pred": "katari",
+   "score": 1.0
+  },
+  {
+   "qid": "35805",
+   "pred": "secretaria",
+   "score": 1.0
+  },
+  {
+   "qid": "37142",
+   "pred": "9497",
+   "score": 1.0
+  },
+  {
+   "qid": "35411",
+   "pred": "nmst",
+   "score": 1.0
+  },
+  {
+   "qid": "35206",
+   "pred": "psg montr\u00e9al",
+   "score": 0.0
+  },
+  {
+   "qid": "37306",
+   "pred": "alphasmart",
+   "score": 1.0
+  },
+  {
+   "qid": "38469",
+   "pred": "cranbourn mansions",
+   "score": 1.0
+  },
+  {
+   "qid": "39187",
+   "pred": "2.70",
+   "score": 1.0
+  },
+  {
+   "qid": "35426",
+   "pred": "czech",
+   "score": 1.0
+  },
+  {
+   "qid": "37500",
+   "pred": "citizens for tax justice",
+   "score": 0.6666666666666666
+  },
+  {
+   "qid": "38158",
+   "pred": "khot ay shay",
+   "score": 0.0
+  },
+  {
+   "qid": "37192",
+   "pred": "yes",
+   "score": 1.0
+  },
+  {
+   "qid": "36277",
+   "pred": "corona",
+   "score": 1.0
+  },
+  {
+   "qid": "39128",
+   "pred": "indus",
+   "score": 0.0
+  },
+  {
+   "qid": "38509",
+   "pred": "i promise to love you",
+   "score": 1.0
+  },
+  {
+   "qid": "38228",
+   "pred": "10",
+   "score": 0.0
+  },
+  {
+   "qid": "38872",
+   "pred": "cemetery",
+   "score": 0.0
+  },
+  {
+   "qid": "36735",
+   "pred": "f",
+   "score": 0.0
+  },
+  {
+   "qid": "35112",
+   "pred": "2012/02/19",
+   "score": 1.0
+  },
+  {
+   "qid": "39096",
+   "pred": "mary higgins clark",
+   "score": 1.0
+  },
+  {
+   "qid": "34717",
+   "pred": "revoitez-vous!",
+   "score": 0.0
+  },
+  {
+   "qid": "35366",
+   "pred": "03",
+   "score": 0.0
+  },
+  {
+   "qid": "37869",
+   "pred": "zonnebloem",
+   "score": 1.0
+  },
+  {
+   "qid": "34611",
+   "pred": "philippe molitor",
+   "score": 1.0
+  },
+  {
+   "qid": "38645",
+   "pred": "john pizzarelli quartet",
+   "score": 1.0
+  },
+  {
+   "qid": "37331",
+   "pred": "candy",
+   "score": 1.0
+  },
+  {
+   "qid": "36600",
+   "pred": "cheese burger",
+   "score": 1.0
+  },
+  {
+   "qid": "37266",
+   "pred": "rug",
+   "score": 0.0
+  },
+  {
+   "qid": "35117",
+   "pred": "my florida flames",
+   "score": 0.0
+  },
+  {
+   "qid": "36167",
+   "pred": "no",
+   "score": 0.0
+  },
+  {
+   "qid": "39251",
+   "pred": "fresh",
+   "score": 1.0
+  },
+  {
+   "qid": "36418",
+   "pred": "2010",
+   "score": 1.0
+  },
+  {
+   "qid": "36556",
+   "pred": "instalar mac os x",
+   "score": 0.0
+  },
+  {
+   "qid": "35769",
+   "pred": "milk",
+   "score": 1.0
+  },
+  {
+   "qid": "39050",
+   "pred": "defect!",
+   "score": 0.3333333333333333
+  },
+  {
+   "qid": "38271",
+   "pred": "org\u00e2nico",
+   "score": 0.0
+  },
+  {
+   "qid": "35349",
+   "pred": "79",
+   "score": 1.0
+  },
+  {
+   "qid": "35261",
+   "pred": "united states of america",
+   "score": 1.0
+  },
+  {
+   "qid": "37223",
+   "pred": "1 2 3",
+   "score": 1.0
+  },
+  {
+   "qid": "38763",
+   "pred": "$23.99",
+   "score": 1.0
+  },
+  {
+   "qid": "38610",
+   "pred": "privat pluemon",
+   "score": 0.0
+  },
+  {
+   "qid": "35495",
+   "pred": "charvet",
+   "score": 1.0
+  },
+  {
+   "qid": "37071",
+   "pred": "52",
+   "score": 1.0
+  },
+  {
+   "qid": "39117",
+   "pred": "lindsey apodaca",
+   "score": 1.0
+  },
+  {
+   "qid": "36986",
+   "pred": "alan",
+   "score": 1.0
+  },
+  {
+   "qid": "35624",
+   "pred": "12",
+   "score": 1.0
+  },
+  {
+   "qid": "39086",
+   "pred": "1:24",
+   "score": 0.0
+  },
+  {
+   "qid": "37327",
+   "pred": "39",
+   "score": 1.0
+  },
+  {
+   "qid": "39028",
+   "pred": "the fast",
+   "score": 0.0
+  },
+  {
+   "qid": "36266",
+   "pred": "3.99",
+   "score": 0.0
+  },
+  {
+   "qid": "39084",
+   "pred": "pv",
+   "score": 1.0
+  },
+  {
+   "qid": "39415",
+   "pred": "fagiolina",
+   "score": 0.0
+  },
+  {
+   "qid": "36958",
+   "pred": "peas",
+   "score": 1.0
+  },
+  {
+   "qid": "38247",
+   "pred": "mountain dew",
+   "score": 1.0
+  },
+  {
+   "qid": "35352",
+   "pred": "pi and kara mor och far",
+   "score": 0.0
+  },
+  {
+   "qid": "39486",
+   "pred": "2-0",
+   "score": 1.0
+  },
+  {
+   "qid": "37755",
+   "pred": "ford",
+   "score": 1.0
+  },
+  {
+   "qid": "37199",
+   "pred": "california",
+   "score": 1.0
+  },
+  {
+   "qid": "39317",
+   "pred": "invisible man",
+   "score": 0.3333333333333333
+  },
+  {
+   "qid": "36585",
+   "pred": "ferrell takes the field",
+   "score": 0.3333333333333333
+  },
+  {
+   "qid": "36980",
+   "pred": "35",
+   "score": 1.0
+  },
+  {
+   "qid": "36108",
+   "pred": "gillette",
+   "score": 1.0
+  },
+  {
+   "qid": "36153",
+   "pred": "m",
+   "score": 0.0
+  },
+  {
+   "qid": "36131",
+   "pred": "kumamoto",
+   "score": 1.0
+  },
+  {
+   "qid": "34872",
+   "pred": "kimberly kay hoang",
+   "score": 1.0
+  },
+  {
+   "qid": "36732",
+   "pred": "milan",
+   "score": 0.3333333333333333
+  },
+  {
+   "qid": "38505",
+   "pred": "jaime albarran",
+   "score": 1.0
+  },
+  {
+   "qid": "35167",
+   "pred": "police impunity",
+   "score": 0.0
+  },
+  {
+   "qid": "35337",
+   "pred": "united states",
+   "score": 1.0
+  },
+  {
+   "qid": "35668",
+   "pred": "erase",
+   "score": 0.0
+  },
+  {
+   "qid": "35827",
+   "pred": "croft",
+   "score": 1.0
+  },
+  {
+   "qid": "34918",
+   "pred": "hermes",
+   "score": 1.0
+  },
+  {
+   "qid": "35259",
+   "pred": "mets",
+   "score": 1.0
+  },
+  {
+   "qid": "39030",
+   "pred": "trains",
+   "score": 1.0
+  },
+  {
+   "qid": "37807",
+   "pred": "white",
+   "score": 1.0
+  },
+  {
+   "qid": "38899",
+   "pred": "wedding ale",
+   "score": 1.0
+  },
+  {
+   "qid": "36859",
+   "pred": "mekonomen",
+   "score": 1.0
+  },
+  {
+   "qid": "38876",
+   "pred": "11",
+   "score": 1.0
+  },
+  {
+   "qid": "36531",
+   "pred": "16th-18th july 2015",
+   "score": 1.0
+  },
+  {
+   "qid": "36364",
+   "pred": "gators",
+   "score": 1.0
+  },
+  {
+   "qid": "39433",
+   "pred": "15",
+   "score": 0.0
+  },
+  {
+   "qid": "38037",
+   "pred": "200",
+   "score": 1.0
+  },
+  {
+   "qid": "39350",
+   "pred": "grand canyon",
+   "score": 1.0
+  },
+  {
+   "qid": "36856",
+   "pred": "leonid mamchenkov",
+   "score": 1.0
+  },
+  {
+   "qid": "38293",
+   "pred": "now playing",
+   "score": 0.3333333333333333
+  },
+  {
+   "qid": "38637",
+   "pred": "siz",
+   "score": 1.0
+  },
+  {
+   "qid": "37529",
+   "pred": "samuelis pufendorf",
+   "score": 0.0
+  },
+  {
+   "qid": "35276",
+   "pred": "48",
+   "score": 1.0
+  },
+  {
+   "qid": "37258",
+   "pred": "bulls field hockey",
+   "score": 0.0
+  },
+  {
+   "qid": "35546",
+   "pred": "italy",
+   "score": 1.0
+  },
+  {
+   "qid": "38586",
+   "pred": "ams",
+   "score": 0.0
+  },
+  {
+   "qid": "39411",
+   "pred": "h",
+   "score": 1.0
+  },
+  {
+   "qid": "37348",
+   "pred": "down",
+   "score": 1.0
+  },
+  {
+   "qid": "36161",
+   "pred": "randy j. hunt",
+   "score": 1.0
+  },
+  {
+   "qid": "36592",
+   "pred": "345ml",
+   "score": 0.6666666666666666
+  },
+  {
+   "qid": "34734",
+   "pred": "london",
+   "score": 0.0
+  },
+  {
+   "qid": "36822",
+   "pred": "welcome",
+   "score": 1.0
+  },
+  {
+   "qid": "35561",
+   "pred": "18.96",
+   "score": 0.6666666666666666
+  },
+  {
+   "qid": "36408",
+   "pred": "brooklyn bridge",
+   "score": 1.0
+  },
+  {
+   "qid": "37649",
+   "pred": "e",
+   "score": 1.0
+  },
+  {
+   "qid": "35998",
+   "pred": "hf62 gvo",
+   "score": 1.0
+  },
+  {
+   "qid": "37326",
+   "pred": "6.5",
+   "score": 1.0
+  },
+  {
+   "qid": "38092",
+   "pred": "dr. laffer",
+   "score": 0.6666666666666666
+  },
+  {
+   "qid": "35111",
+   "pred": "france",
+   "score": 1.0
+  },
+  {
+   "qid": "39574",
+   "pred": "lulu b.",
+   "score": 1.0
+  },
+  {
+   "qid": "35800",
+   "pred": "86",
+   "score": 1.0
+  },
+  {
+   "qid": "36394",
+   "pred": "1865",
+   "score": 1.0
+  },
+  {
+   "qid": "34972",
+   "pred": "global warming",
+   "score": 1.0
+  },
+  {
+   "qid": "39303",
+   "pred": "www.sgpw.com",
+   "score": 0.0
+  },
+  {
+   "qid": "38978",
+   "pred": "yes",
+   "score": 1.0
+  },
+  {
+   "qid": "35208",
+   "pred": "cognac",
+   "score": 1.0
+  },
+  {
+   "qid": "34820",
+   "pred": "a",
+   "score": 1.0
+  },
+  {
+   "qid": "35621",
+   "pred": "royals",
+   "score": 1.0
+  },
+  {
+   "qid": "36146",
+   "pred": "borjomi",
+   "score": 1.0
+  },
+  {
+   "qid": "39320",
+   "pred": "alor star langgar kangar",
+   "score": 1.0
+  },
+  {
+   "qid": "35582",
+   "pred": "3",
+   "score": 1.0
+  },
+  {
+   "qid": "37806",
+   "pred": "pro events",
+   "score": 0.0
+  },
+  {
+   "qid": "35351",
+   "pred": "pi",
+   "score": 0.0
+  },
+  {
+   "qid": "37634",
+   "pred": "dell",
+   "score": 0.0
+  },
+  {
+   "qid": "35552",
+   "pred": "samsung",
+   "score": 1.0
+  },
+  {
+   "qid": "34900",
+   "pred": "10:10",
+   "score": 1.0
+  },
+  {
+   "qid": "34779",
+   "pred": "pepsi",
+   "score": 1.0
+  },
+  {
+   "qid": "36196",
+   "pred": "e",
+   "score": 1.0
+  },
+  {
+   "qid": "36117",
+   "pred": "national news",
+   "score": 1.0
+  },
+  {
+   "qid": "35616",
+   "pred": "enable",
+   "score": 1.0
+  },
+  {
+   "qid": "38527",
+   "pred": "reebok",
+   "score": 1.0
+  },
+  {
+   "qid": "36327",
+   "pred": "13:18",
+   "score": 1.0
+  },
+  {
+   "qid": "35102",
+   "pred": "10:12",
+   "score": 0.0
+  },
+  {
+   "qid": "34788",
+   "pred": "yes",
+   "score": 1.0
+  },
+  {
+   "qid": "39060",
+   "pred": "lm",
+   "score": 1.0
+  },
+  {
+   "qid": "38088",
+   "pred": "thetruthaboutthebpsettlement.com",
+   "score": 1.0
+  }
+ ]
+}

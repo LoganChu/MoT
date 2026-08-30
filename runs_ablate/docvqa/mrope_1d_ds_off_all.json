@@ -1,0 +1,1013 @@
+{
+ "benchmark": "docvqa",
+ "arm": "mrope_1d_ds_off_all",
+ "model": "Qwen/Qwen3-VL-2B-Instruct",
+ "reused": 0,
+ "description": "Both removed. If the joint damage is smaller than the sum of the separate damages, DeepStack was re-supplying spatial information that M-RoPE also carries; if larger, the two are complementary. Neither source paper measures this.",
+ "n": 199,
+ "metric": "ANLS",
+ "mean": 0.6890833974519658,
+ "seconds": 1864.529386997223,
+ "per_question": [
+  {
+   "qid": "62474",
+   "pred": "572",
+   "score": 1.0
+  },
+  {
+   "qid": "5557",
+   "pred": "10",
+   "score": 0.5
+  },
+  {
+   "qid": "57841",
+   "pred": "33",
+   "score": 1.0
+  },
+  {
+   "qid": "52463",
+   "pred": "December 31, 2006",
+   "score": 0.0
+  },
+  {
+   "qid": "47531",
+   "pred": "12,13,14",
+   "score": 0.0
+  },
+  {
+   "qid": "63597",
+   "pred": "2/1-2/28/66",
+   "score": 1.0
+  },
+  {
+   "qid": "5382",
+   "pred": "ton of C per per toe",
+   "score": 0.8
+  },
+  {
+   "qid": "61371",
+   "pred": "in kona",
+   "score": 0.5714285714285714
+  },
+  {
+   "qid": "55304",
+   "pred": "Related Related Party with whom transaction have taken place during the year",
+   "score": 0.8947368421052632
+  },
+  {
+   "qid": "45722",
+   "pred": "Effect of HRT or Raloxifene on Endothelial Function",
+   "score": 1.0
+  },
+  {
+   "qid": "7401",
+   "pred": "Z86",
+   "score": 1.0
+  },
+  {
+   "qid": "60011",
+   "pred": "The information that will be wired later is the message from Dr. Roger Adams.",
+   "score": 0.0
+  },
+  {
+   "qid": "47458",
+   "pred": "1976",
+   "score": 1.0
+  },
+  {
+   "qid": "1834",
+   "pred": "OMB",
+   "score": 1.0
+  },
+  {
+   "qid": "36495",
+   "pred": "14",
+   "score": 0.5
+  },
+  {
+   "qid": "51001",
+   "pred": "Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate Demonstrate",
+   "score": 0.0
+  },
+  {
+   "qid": "60491",
+   "pred": "THIS SIDE OF CARD IS FOR ADDRESS",
+   "score": 1.0
+  },
+  {
+   "qid": "65158",
+   "pred": "Highest highest pentile",
+   "score": 0.6521739130434783
+  },
+  {
+   "qid": "60497",
+   "pred": "10",
+   "score": 0.0
+  },
+  {
+   "qid": "56032",
+   "pred": "5137",
+   "score": 1.0
+  },
+  {
+   "qid": "32211",
+   "pred": "20 cents",
+   "score": 1.0
+  },
+  {
+   "qid": "1964",
+   "pred": "Dennis D. Murphy",
+   "score": 0.0
+  },
+  {
+   "qid": "61472",
+   "pred": "16A",
+   "score": 0.0
+  },
+  {
+   "qid": "50452",
+   "pred": "Table 17",
+   "score": 1.0
+  },
+  {
+   "qid": "1035",
+   "pred": "ELI LILLY AND AND COMPANY",
+   "score": 0.84
+  },
+  {
+   "qid": "53538",
+   "pred": "Canoe Trip",
+   "score": 1.0
+  },
+  {
+   "qid": "55259",
+   "pred": "94,600",
+   "score": 1.0
+  },
+  {
+   "qid": "64496",
+   "pred": "100%",
+   "score": 0.0
+  },
+  {
+   "qid": "57253",
+   "pred": "Y.C. Deveshwar",
+   "score": 0.0
+  },
+  {
+   "qid": "45683",
+   "pred": "Figure 4",
+   "score": 1.0
+  },
+  {
+   "qid": "63045",
+   "pred": "First First American American American American American American American American American American American American American American American American American American American American American American American American American American American American American American",
+   "score": 0.0
+  },
+  {
+   "qid": "36944",
+   "pred": "F",
+   "score": 1.0
+  },
+  {
+   "qid": "61781",
+   "pred": "We're fighting for our life",
+   "score": 0.9642857142857143
+  },
+  {
+   "qid": "8073",
+   "pred": "DOR 1299 B10G2F",
+   "score": 1.0
+  },
+  {
+   "qid": "59880",
+   "pred": "Abstract Abstract Abstract Form",
+   "score": 0.0
+  },
+  {
+   "qid": "15277",
+   "pred": "NSE",
+   "score": 1.0
+  },
+  {
+   "qid": "38914",
+   "pred": "1 inch",
+   "score": 0.8333333333333334
+  },
+  {
+   "qid": "5807",
+   "pred": "Tune the Hallmann",
+   "score": 0.5294117647058824
+  },
+  {
+   "qid": "47748",
+   "pred": "Walter J. Darby",
+   "score": 0.6
+  },
+  {
+   "qid": "52485",
+   "pred": "The last point on the agenda is \"Board Board Summary of Technology Support current activities - attached\".",
+   "score": 0.0
+  },
+  {
+   "qid": "887",
+   "pred": "90",
+   "score": 0.0
+  },
+  {
+   "qid": "64369",
+   "pred": "CD",
+   "score": 1.0
+  },
+  {
+   "qid": "57524",
+   "pred": "Bingo!",
+   "score": 0.0
+  },
+  {
+   "qid": "42184",
+   "pred": "$89,434.39",
+   "score": 1.0
+  },
+  {
+   "qid": "54451",
+   "pred": "20.00",
+   "score": 1.0
+  },
+  {
+   "qid": "57065",
+   "pred": "GODFREY PHILLIPS",
+   "score": 0.5333333333333333
+  },
+  {
+   "qid": "24423",
+   "pred": "$975.00",
+   "score": 1.0
+  },
+  {
+   "qid": "24116",
+   "pred": "1.60",
+   "score": 1.0
+  },
+  {
+   "qid": "63699",
+   "pred": "TR",
+   "score": 1.0
+  },
+  {
+   "qid": "61764",
+   "pred": "$839",
+   "score": 1.0
+  },
+  {
+   "qid": "52241",
+   "pred": "$837,091",
+   "score": 1.0
+  },
+  {
+   "qid": "53463",
+   "pred": "CRIS Case Summary",
+   "score": 1.0
+  },
+  {
+   "qid": "893",
+   "pred": "1734",
+   "score": 1.0
+  },
+  {
+   "qid": "51549",
+   "pred": "FUM denotes Fumigant.",
+   "score": 0.0
+  },
+  {
+   "qid": "56401",
+   "pred": "GROUP A",
+   "score": 1.0
+  },
+  {
+   "qid": "47755",
+   "pred": "cancer",
+   "score": 1.0
+  },
+  {
+   "qid": "3044",
+   "pred": "759-4048",
+   "score": 1.0
+  },
+  {
+   "qid": "51070",
+   "pred": "2",
+   "score": 1.0
+  },
+  {
+   "qid": "47929",
+   "pred": "MEMORANDUM",
+   "score": 1.0
+  },
+  {
+   "qid": "63199",
+   "pred": "US Department of Agriculture",
+   "score": 1.0
+  },
+  {
+   "qid": "58549",
+   "pred": "Sales training training background and journal article responses",
+   "score": 0.0
+  },
+  {
+   "qid": "58454",
+   "pred": "10 x $1,500 per member",
+   "score": 1.0
+  },
+  {
+   "qid": "37006",
+   "pred": "Preventive Medicine",
+   "score": 1.0
+  },
+  {
+   "qid": "47480",
+   "pred": "CREDIT",
+   "score": 1.0
+  },
+  {
+   "qid": "39073",
+   "pred": "soft drink",
+   "score": 1.0
+  },
+  {
+   "qid": "9605",
+   "pred": "The document is a survey report for the Telmark program, which evaluates the performance of retail and wholesale stores in a specific region.",
+   "score": 0.0
+  },
+  {
+   "qid": "44967",
+   "pred": "August 1st, 1945",
+   "score": 1.0
+  },
+  {
+   "qid": "15233",
+   "pred": "1,43,121",
+   "score": 0.0
+  },
+  {
+   "qid": "44825",
+   "pred": "36%",
+   "score": 1.0
+  },
+  {
+   "qid": "57311",
+   "pred": "Dividend and received",
+   "score": 0.8095238095238095
+  },
+  {
+   "qid": "64357",
+   "pred": "Former Director of the Framingham Health Study",
+   "score": 0.9565217391304348
+  },
+  {
+   "qid": "53576",
+   "pred": "The \"No Bull 5\" ballots",
+   "score": 0.0
+  },
+  {
+   "qid": "64289",
+   "pred": "(2)",
+   "score": 0.0
+  },
+  {
+   "qid": "51676",
+   "pred": "INDEX",
+   "score": 1.0
+  },
+  {
+   "qid": "64989",
+   "pred": "Food and and Nutrition Nutrition Board",
+   "score": 0.0
+  },
+  {
+   "qid": "47973",
+   "pred": "6,445.00",
+   "score": 0.0
+  },
+  {
+   "qid": "56601",
+   "pred": "1985",
+   "score": 1.0
+  },
+  {
+   "qid": "36588",
+   "pred": "0.2",
+   "score": 0.0
+  },
+  {
+   "qid": "63169",
+   "pred": "11/28/60",
+   "score": 0.0
+  },
+  {
+   "qid": "25786",
+   "pred": "-2-",
+   "score": 0.0
+  },
+  {
+   "qid": "32150",
+   "pred": "23,000.00",
+   "score": 0.7777777777777778
+  },
+  {
+   "qid": "62472",
+   "pred": "7,500.00",
+   "score": 0.5555555555555556
+  },
+  {
+   "qid": "43167",
+   "pred": "2010",
+   "score": 0.5
+  },
+  {
+   "qid": "56473",
+   "pred": "PM SERVICE",
+   "score": 1.0
+  },
+  {
+   "qid": "3074",
+   "pred": "Boiler Feed Tank",
+   "score": 1.0
+  },
+  {
+   "qid": "44808",
+   "pred": "33",
+   "score": 1.0
+  },
+  {
+   "qid": "59666",
+   "pred": "$25.00",
+   "score": 1.0
+  },
+  {
+   "qid": "18768",
+   "pred": "D. C. Straka",
+   "score": 0.9166666666666666
+  },
+  {
+   "qid": "43314",
+   "pred": "10/30",
+   "score": 0.0
+  },
+  {
+   "qid": "431",
+   "pred": "1.0%",
+   "score": 1.0
+  },
+  {
+   "qid": "61785",
+   "pred": "Texas",
+   "score": 0.0
+  },
+  {
+   "qid": "52481",
+   "pred": "BEST",
+   "score": 0.0
+  },
+  {
+   "qid": "38912",
+   "pred": "1957",
+   "score": 1.0
+  },
+  {
+   "qid": "58333",
+   "pred": "300R",
+   "score": 0.0
+  },
+  {
+   "qid": "58537",
+   "pred": "Wyeth",
+   "score": 1.0
+  },
+  {
+   "qid": "1693",
+   "pred": "March 28, 2017",
+   "score": 0.5714285714285714
+  },
+  {
+   "qid": "51138",
+   "pred": "Systematicatic Review",
+   "score": 0.8095238095238095
+  },
+  {
+   "qid": "57822",
+   "pred": "7/17/2003",
+   "score": 1.0
+  },
+  {
+   "qid": "50260",
+   "pred": "THIS SIDE OF CARD IS FOR ADDRESS",
+   "score": 1.0
+  },
+  {
+   "qid": "15148",
+   "pred": "5",
+   "score": 1.0
+  },
+  {
+   "qid": "62533",
+   "pred": "Shark",
+   "score": 0.8
+  },
+  {
+   "qid": "15007",
+   "pred": "(downey@labs.wyeth.com)",
+   "score": 0.9130434782608696
+  },
+  {
+   "qid": "60935",
+   "pred": "11",
+   "score": 1.0
+  },
+  {
+   "qid": "55944",
+   "pred": "1,040",
+   "score": 1.0
+  },
+  {
+   "qid": "52152",
+   "pred": "PBS Film Library TV Placement",
+   "score": 0.0
+  },
+  {
+   "qid": "51791",
+   "pred": "a graduate student at the University of Colorado",
+   "score": 0.9166666666666666
+  },
+  {
+   "qid": "7487",
+   "pred": "700399",
+   "score": 1.0
+  },
+  {
+   "qid": "46506",
+   "pred": "JNJ",
+   "score": 1.0
+  },
+  {
+   "qid": "56516",
+   "pred": "SMOKERSKERS EXPEXRESS, INC",
+   "score": 0.0
+  },
+  {
+   "qid": "60932",
+   "pred": "Oversight",
+   "score": 1.0
+  },
+  {
+   "qid": "55029",
+   "pred": "L. W. Pullen",
+   "score": 1.0
+  },
+  {
+   "qid": "63687",
+   "pred": "3",
+   "score": 1.0
+  },
+  {
+   "qid": "62099",
+   "pred": "CONFERENCING AND PRESS HEADQUARTERS",
+   "score": 0.0
+  },
+  {
+   "qid": "25708",
+   "pred": "september 17, 1969",
+   "score": 1.0
+  },
+  {
+   "qid": "51329",
+   "pred": "ADMINISTRATIVE",
+   "score": 0.0
+  },
+  {
+   "qid": "57242",
+   "pred": "ITC",
+   "score": 0.0
+  },
+  {
+   "qid": "6814",
+   "pred": "509977",
+   "score": 1.0
+  },
+  {
+   "qid": "64744",
+   "pred": "1969 Wisdomdom Award",
+   "score": 0.5384615384615384
+  },
+  {
+   "qid": "64770",
+   "pred": "5 miles",
+   "score": 0.6
+  },
+  {
+   "qid": "57139",
+   "pred": "Rs. 47.63 Crores",
+   "score": 0.75
+  },
+  {
+   "qid": "4445",
+   "pred": "CAMEL",
+   "score": 0.0
+  },
+  {
+   "qid": "18776",
+   "pred": "780",
+   "score": 1.0
+  },
+  {
+   "qid": "3081",
+   "pred": "1748",
+   "score": 0.0
+  },
+  {
+   "qid": "49361",
+   "pred": "Irish Sea",
+   "score": 1.0
+  },
+  {
+   "qid": "60860",
+   "pred": "Malcolm R. Parker, M.D., Los Gatos, California",
+   "score": 0.0
+  },
+  {
+   "qid": "58896",
+   "pred": "10",
+   "score": 0.0
+  },
+  {
+   "qid": "60032",
+   "pred": "single single space",
+   "score": 0.631578947368421
+  },
+  {
+   "qid": "62280",
+   "pred": "New Jersey",
+   "score": 1.0
+  },
+  {
+   "qid": "2193",
+   "pred": "Merrilll Lynch  Pierce  Fenner  &  Smith  Inc.",
+   "score": 0.975609756097561
+  },
+  {
+   "qid": "53575",
+   "pred": "25%",
+   "score": 1.0
+  },
+  {
+   "qid": "46575",
+   "pred": "Henderson matter.",
+   "score": 0.9411764705882353
+  },
+  {
+   "qid": "41829",
+   "pred": "Barrett",
+   "score": 1.0
+  },
+  {
+   "qid": "49118",
+   "pred": "Peggy R. Borum",
+   "score": 1.0
+  },
+  {
+   "qid": "1959",
+   "pred": "$240,055",
+   "score": 1.0
+  },
+  {
+   "qid": "43632",
+   "pred": "217",
+   "score": 0.0
+  },
+  {
+   "qid": "57931",
+   "pred": "Wyeth",
+   "score": 1.0
+  },
+  {
+   "qid": "56457",
+   "pred": "Assistant",
+   "score": 0.0
+  },
+  {
+   "qid": "57171",
+   "pred": "2009-10 to 2010-11",
+   "score": 1.0
+  },
+  {
+   "qid": "37191",
+   "pred": "Federal Food, Drug, and Cosmetic Act",
+   "score": 1.0
+  },
+  {
+   "qid": "64980",
+   "pred": "5",
+   "score": 0.0
+  },
+  {
+   "qid": "57196",
+   "pred": "1967 meeting",
+   "score": 1.0
+  },
+  {
+   "qid": "365",
+   "pred": "Kool, Capri, Coresta, Coresta, Coresta, Coresta, Coresta, Coresta, Coresta, Coresta, Coresta",
+   "score": 0.0
+  },
+  {
+   "qid": "50780",
+   "pred": "412-2-6244-26100",
+   "score": 0.75
+  },
+  {
+   "qid": "65372",
+   "pred": "May 9-10, 1970",
+   "score": 1.0
+  },
+  {
+   "qid": "26944",
+   "pred": "9:30 a.m.",
+   "score": 1.0
+  },
+  {
+   "qid": "65024",
+   "pred": "December 1954",
+   "score": 1.0
+  },
+  {
+   "qid": "64662",
+   "pred": "American Medical Association",
+   "score": 1.0
+  },
+  {
+   "qid": "58925",
+   "pred": "VST Industries Limited",
+   "score": 1.0
+  },
+  {
+   "qid": "62528",
+   "pred": "1947",
+   "score": 1.0
+  },
+  {
+   "qid": "50361",
+   "pred": "10.30 - 10.45",
+   "score": 1.0
+  },
+  {
+   "qid": "4917",
+   "pred": "50",
+   "score": 1.0
+  },
+  {
+   "qid": "58876",
+   "pred": "Andhra Pradesh, Kerala, Tamil Nadu and Assam",
+   "score": 0.9772727272727273
+  },
+  {
+   "qid": "57804",
+   "pred": "Monthly",
+   "score": 1.0
+  },
+  {
+   "qid": "56822",
+   "pred": "Hazel K. Stiebbling",
+   "score": 0.0
+  },
+  {
+   "qid": "265",
+   "pred": "60-0130",
+   "score": 0.0
+  },
+  {
+   "qid": "18838",
+   "pred": "741-2483",
+   "score": 1.0
+  },
+  {
+   "qid": "59681",
+   "pred": "$1,451,895",
+   "score": 1.0
+  },
+  {
+   "qid": "1625",
+   "pred": "ICMJE Form for Disclosure of Potential Conflicts of Interest",
+   "score": 1.0
+  },
+  {
+   "qid": "63531",
+   "pred": "Immunology",
+   "score": 0.0
+  },
+  {
+   "qid": "6941",
+   "pred": "Corporate",
+   "score": 1.0
+  },
+  {
+   "qid": "41799",
+   "pred": "1,830.55",
+   "score": 1.0
+  },
+  {
+   "qid": "49442",
+   "pred": "Research",
+   "score": 0.0
+  },
+  {
+   "qid": "6978",
+   "pred": "June 2, 1997",
+   "score": 0.0
+  },
+  {
+   "qid": "36936",
+   "pred": "Spouse",
+   "score": 1.0
+  },
+  {
+   "qid": "65181",
+   "pred": "The main heading is \"The Clevelandland Experience\".",
+   "score": 0.0
+  },
+  {
+   "qid": "58685",
+   "pred": "0.15",
+   "score": 1.0
+  },
+  {
+   "qid": "44281",
+   "pred": "investigators",
+   "score": 1.0
+  },
+  {
+   "qid": "58349",
+   "pred": null,
+   "score": null
+  },
+  {
+   "qid": "60035",
+   "pred": "125",
+   "score": 0.75
+  },
+  {
+   "qid": "58373",
+   "pred": "$20,000",
+   "score": 1.0
+  },
+  {
+   "qid": "64296",
+   "pred": "Warner-Lambert Company",
+   "score": 1.0
+  },
+  {
+   "qid": "45643",
+   "pred": "step 4",
+   "score": 1.0
+  },
+  {
+   "qid": "46672",
+   "pred": "21",
+   "score": 1.0
+  },
+  {
+   "qid": "59625",
+   "pred": "NOTICE TO EMPLOYEE",
+   "score": 1.0
+  },
+  {
+   "qid": "57167",
+   "pred": "Green",
+   "score": 1.0
+  },
+  {
+   "qid": "63833",
+   "pred": "2.3%",
+   "score": 1.0
+  },
+  {
+   "qid": "55214",
+   "pred": "3.0 - 5.4",
+   "score": 1.0
+  },
+  {
+   "qid": "476",
+   "pred": "United States",
+   "score": 1.0
+  },
+  {
+   "qid": "32152",
+   "pred": "3,500.00",
+   "score": 1.0
+  },
+  {
+   "qid": "58680",
+   "pred": "270.00",
+   "score": 1.0
+  },
+  {
+   "qid": "8075",
+   "pred": "21855",
+   "score": 1.0
+  },
+  {
+   "qid": "59835",
+   "pred": "650",
+   "score": 1.0
+  },
+  {
+   "qid": "52483",
+   "pred": "Friday 22nd September 1995 at 10 o'clock at TMA",
+   "score": 0.7021276595744681
+  },
+  {
+   "qid": "45726",
+   "pred": "19",
+   "score": 1.0
+  },
+  {
+   "qid": "55248",
+   "pred": "3.60",
+   "score": 0.0
+  },
+  {
+   "qid": "56423",
+   "pred": "New York, N.Y.",
+   "score": 1.0
+  },
+  {
+   "qid": "51328",
+   "pred": "Thompson",
+   "score": 0.0
+  },
+  {
+   "qid": "51679",
+   "pred": "7",
+   "score": 1.0
+  },
+  {
+   "qid": "785",
+   "pred": "Center for Science in the Public Health Service",
+   "score": 0.7659574468085106
+  },
+  {
+   "qid": "51244",
+   "pred": "John",
+   "score": 0.0
+  },
+  {
+   "qid": "43083",
+   "pred": "01/01/2006",
+   "score": 1.0
+  },
+  {
+   "qid": "53710",
+   "pred": "104-0025",
+   "score": 1.0
+  },
+  {
+   "qid": "6848",
+   "pred": "03/16/95",
+   "score": 1.0
+  },
+  {
+   "qid": "60498",
+   "pred": "Weight",
+   "score": 0.0
+  },
+  {
+   "qid": "58897",
+   "pred": "8",
+   "score": 1.0
+  },
+  {
+   "qid": "32154",
+   "pred": "2,000.00",
+   "score": 1.0
+  },
+  {
+   "qid": "54958",
+   "pred": "25.0",
+   "score": 1.0
+  },
+  {
+   "qid": "59570",
+   "pred": "7/10/76",
+   "score": 1.0
+  },
+  {
+   "qid": "57517",
+   "pred": "Bingo!",
+   "score": 1.0
+  },
+  {
+   "qid": "47069",
+   "pred": "-564",
+   "score": 0.0
+  }
+ ]
+}
